@@ -1,0 +1,278 @@
+@import "tailwindcss";
+
+@theme {
+    --color-brand-deep: #0a1628;
+    --color-brand-gold: #10b981;
+    --color-brand-muted: #059669;
+    --color-brand-faded: #6ee7b7;
+
+    --color-dashboard-bg: #0a1628;
+    --color-dashboard-panel: #0f1d32;
+    --color-dashboard-widget: rgba(15, 29, 50, 0.84);
+    --color-dashboard-border: rgba(16, 185, 129, 0.18);
+    --color-dashboard-accent: #10b981;
+    --color-dashboard-text-muted: rgba(110, 231, 183, 0.52);
+    --color-dashboard-text-light: rgba(243, 239, 228, 0.74);
+
+    --transition-timing-function-expo: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root {
+    --background: #0a1628;
+    --foreground: #f3efe4;
+}
+
+body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: var(--font-ui), sans-serif;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+}
+
+h1, h2, h3, .font-display {
+    font-family: var(--font-display), serif;
+    letter-spacing: -0.03em;
+}
+
+.font-ui {
+    font-family: var(--font-ui), sans-serif;
+}
+
+.font-mono,
+.tabular-nums {
+    font-family: var(--font-mono), monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(16, 185, 129, 0.3);
+    border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(16, 185, 129, 0.55);
+}
+
+@keyframes canopy-ring {
+    0%   { transform: scale(0.4); opacity: 0.6; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
+
+.canopy-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    border: 1px solid rgba(16, 185, 129, 0.46);
+    animation: canopy-ring 2.4s ease-out infinite;
+}
+
+.canopy-ring:nth-child(2) { animation-delay: 0.8s; }
+.canopy-ring:nth-child(3) { animation-delay: 1.6s; }
+
+.eco-tooltip {
+    background: rgba(10, 22, 40, 0.96) !important;
+    border: 1px solid rgba(16, 185, 129, 0.24) !important;
+    color: rgba(243, 239, 228, 0.88) !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 5px 10px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+    white-space: nowrap !important;
+}
+
+.eco-tooltip::before {
+    display: none !important;
+}
+
+.leaflet-interactive:focus {
+    outline: none !important;
+}
+
+.leaflet-control-attribution {
+    background: rgba(10, 22, 40, 0.88) !important;
+    color: rgba(110, 231, 183, 0.42) !important;
+    font-size: 9px !important;
+    padding: 2px 8px !important;
+    border-top: 1px solid rgba(16, 185, 129, 0.12) !important;
+}
+
+.leaflet-control-attribution a {
+    color: rgba(16, 185, 129, 0.7) !important;
+}
+
+.glass-panel {
+    background: linear-gradient(180deg, rgba(10, 22, 40, 0.84) 0%, rgba(8, 18, 35, 0.90) 100%);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border-radius: 0 !important;
+    border: 1px solid rgba(243, 239, 228, 0.08);
+    box-shadow: 0 24px 54px rgba(0, 0, 0, 0.48);
+}
+
+.year-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    outline: none;
+    border: none;
+    cursor: pointer;
+}
+
+.year-slider:focus {
+    outline: none;
+}
+
+.year-slider:focus-visible {
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35);
+    border-radius: 2px;
+}
+
+.year-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #10b981;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-top: -5.5px;
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.18);
+    border: 2px solid #0f1d32;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.year-slider::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.24);
+    transform: scale(1.15);
+}
+
+.year-slider::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 2px;
+}
+
+.year-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #10b981;
+    cursor: pointer;
+    border-radius: 2px;
+    border: 2px solid #0f1d32;
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.18);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.year-slider::-moz-range-thumb:hover {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.24);
+    transform: scale(1.15);
+}
+
+.year-slider::-moz-range-track {
+    height: 3px;
+    border-radius: 2px;
+}
+
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(16,185,129,0.55)' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px !important;
+}
+
+select:focus {
+    outline: none;
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
+}
+
+.map-ctrl {
+    background: linear-gradient(180deg, rgba(10, 22, 40, 0.92) 0%, rgba(8, 18, 35, 0.96) 100%);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border: 1px solid rgba(243, 239, 228, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* District / region hover tooltip */
+.district-tooltip {
+    background: linear-gradient(180deg, rgba(10, 22, 40, 0.96) 0%, rgba(8, 18, 35, 0.98) 100%) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(243, 239, 228, 0.12) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+    color: rgba(243, 239, 228, 0.92) !important;
+    font-family: var(--font-ui), sans-serif !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.06em !important;
+    padding: 5px 10px !important;
+    white-space: nowrap !important;
+}
+
+.district-tooltip::before {
+    display: none !important;
+}
+
+.opacity-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    border-radius: 1px;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+}
+
+.opacity-slider::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 8px;
+    height: 8px;
+    margin-top: -3px;
+    background: rgba(16, 185, 129, 0.7);
+    cursor: pointer;
+    border-radius: 50%;
+    border: none;
+    transition: background 0.15s ease;
+}
+
+.opacity-slider::-webkit-slider-thumb:hover {
+    background: rgba(16, 185, 129, 0.95);
+}
+
+.opacity-slider::-moz-range-track {
+    height: 2px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.opacity-slider::-moz-range-thumb {
+    width: 8px;
+    height: 8px;
+    background: rgba(16, 185, 129, 0.7);
+    cursor: pointer;
+    border-radius: 50%;
+    border: none;
+    transition: background 0.15s ease;
+}

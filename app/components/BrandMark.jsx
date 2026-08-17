@@ -1,0 +1,19 @@
+export function BrandMark({ className = 'w-10 h-10' }) {
+    return (
+        <svg
+            viewBox="0 0 64 64"
+            className={className}
+            role="img"
+            aria-label="Eco Pulse mark"
+        >
+            <g transform="translate(6 6) scale(0.36)">
+                <path d="M18 36L40 16L60 28L54 54L30 62Z" fill="#89a91f" />
+                <path d="M60 28L82 16L102 28L96 50L74 60L54 54Z" fill="#a8bc53" />
+                <path d="M30 62L54 54L74 60L68 88L42 96L22 80Z" fill="#4a7b4d" />
+                <path d="M74 60L96 50L116 64L108 92L82 100L68 88Z" fill="#d2a343" />
+                <path d="M102 28L122 18L140 36L136 62L116 64L96 50Z" fill="#8aa3a2" />
+                <path d="M42 96L68 88L82 100L72 122L46 126L28 112Z" fill="#6d8b57" />
+            </g>
+        </svg>
+    );
+}
