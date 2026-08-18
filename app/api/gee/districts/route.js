@@ -27,7 +27,7 @@ export async function POST(request) {
             });
         });
 
-        const filtered = fc.filter(ee.Filter.stringStartsWith('REGION', region.substring(0, 4)));
+        const filtered = fc.filter(ee.Filter.eq('REGION', region));
 
         const districts = await new Promise((res, rej) => {
             filtered.aggregate_array('Dist_Name').distinct().sort().evaluate((data, err) => {
