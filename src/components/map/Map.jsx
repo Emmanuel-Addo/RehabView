@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Loader2, Globe } from 'lucide-react';
 
 const EMPTY_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 delete L.Icon.Default.prototype._getIconUrl;
@@ -213,6 +214,21 @@ export default function MapComponent({
 
                 <MapController bounds={bounds} region={region} zoomCommand={zoomCommand} mapCommand={mapCommand} />
             </MapContainer>
+
+            {loading && (
+                <div className="absolute inset-0 z-[400] flex flex-col items-center justify-center bg-black/35 backdrop-blur-[2px]">
+                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-950/90 px-6 py-5 shadow-2xl text-center">
+                        <div className="relative flex items-center justify-center h-12 w-12 rounded-xl bg-neutral-900 border border-neutral-800">
+                            <Globe className="h-6 w-6 text-neutral-400 animate-pulse" />
+                            <Loader2 className="absolute inset-0 h-12 w-12 animate-spin text-white opacity-40" strokeWidth={1.5} />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-white">Retrieving Satellite Data</p>
+                            <p className="mt-1 text-[9px] text-neutral-400">Processing Sentinel-2 GEE layers...</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

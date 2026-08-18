@@ -24,14 +24,15 @@ import {
     Send,
     Share2,
     TreePine,
+    Download,
 } from 'lucide-react';
 
-import { GlassPanel } from './GlassPanel.jsx';
-import { TourGuide } from './TourGuide.jsx';
-import { AboutModal } from './AboutModal.jsx';
-import { DisclaimerModal } from './DisclaimerModal.jsx';
-import { RequestDataModal } from './RequestDataModal.jsx';
-import { LossChart } from './LossChart.jsx';
+import { GlassPanel } from '@/components/ui/GlassPanel.jsx';
+import { TourGuide } from '@/components/layout/TourGuide.jsx';
+import { AboutModal } from '@/components/modals/AboutModal.jsx';
+import { DisclaimerModal } from '@/components/modals/DisclaimerModal.jsx';
+import { RequestDataModal } from '@/components/modals/RequestDataModal.jsx';
+import { LossChart } from '@/components/dashboard/LossChart.jsx';
 
 const ABOUT_KEY = 'RehabView_about_seen';
 const DISCLAIMER_KEY = 'RehabView_disclaimer_seen';
@@ -76,7 +77,7 @@ function computeTakeaway(metrics, selectedYear, selectedRegion, selectedDistrict
     return `District NDVI estimates for ${selectedDistrict}, ${selectedYear}.`;
 }
 
-const MapComponent = dynamic(() => import('./Map.jsx'), { ssr: false });
+const MapComponent = dynamic(() => import('@/components/map/Map.jsx'), { ssr: false });
 
 function compactValue(val) {
     const num = parseFloat(val) || 0;
@@ -186,6 +187,11 @@ export default function Dashboard() {
     const [years, setYears] = useState([]);
     const [regions, setRegions] = useState([]);
     const [districts, setDistricts] = useState([]);
+    const [selectedLayers, setSelectedLayers] = useState(['ndvi']);
+    const [metrics, setMetrics] = useState({ ndvi: 0, prevNdvi: 0, ndviChange: 0, vegetationHealth: 'Unknown', trend: [] });
+    const [metadataError, setMetadataError] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [loadingDistricts, setLoadingDistricts] = useState(false);
     const [analysisScope, setAnalysisScope] = useState('region');
     const [draftYear, setDraftYear] = useState(null);
     const [draftRegion, setDraftRegion] = useState('');
@@ -193,16 +199,10 @@ export default function Dashboard() {
     const [activeYear, setActiveYear] = useState(null);
     const [activeRegion, setActiveRegion] = useState('');
     const [activeDistrict, setActiveDistrict] = useState('');
-
-    const [metrics, setMetrics] = useState({ ndvi: 0, prevNdvi: 0, ndviChange: 0, vegetationHealth: 'Unknown', trend: [] });
-    const [loading, setLoading] = useState(false);
-    const [loadingDistricts, setLoadingDistricts] = useState(false);
-    const [loadingMetrics, setLoadingMetrics] = useState(false);
-    const [metadataError, setMetadataError] = useState(null);
-    const [metricsError, setMetricsError] = useState(null);
     const [districtsError, setDistrictsError] = useState(null);
-
-    const [selectedLayers, setSelectedLayers] = useState(['ndvi']);
+    const [metricsError, setMetricsError] = useState(null);
+    const [loadingMetrics, setLoadingMetrics] = useState(false);
+    const [activeTab, setActiveTab] = useState('setup');
 
     const toggleLayer = (id) => {
         setSelectedLayers(prev => prev.includes(id) ? prev.filter(layer => layer !== id) : [...prev, id]);
@@ -275,6 +275,38 @@ export default function Dashboard() {
             confirm();
         }
     }, [activeYear, activeRegion, activeDistrict]);
+
+    const downloadCSVReport = useCallback(() => {
+        if (!activeRegion) return;
+        
+        let csvContent = "data:text/csv;charset=utf-8,";
+        
+        // Add metadata headers
+        csvContent += "RehabView NDVI Analysis Report\r\n";
+        csvContent += `Scope,${activeDistrict ? 'District' : 'Region'}\r\n`;
+        csvContent += `Location,${activeDistrict || activeRegion}\r\n`;
+        csvContent += `Selected Year,${activeYear}\r\n`;
+        csvContent += `Average NDVI (Selected Year),${(metrics.ndvi ?? 0).toFixed(4)}\r\n`;
+        csvContent += `Vegetation Status,${metrics.vegetationHealth}\r\n`;
+        csvContent += `NDVI Change vs Prev Year,${(metrics.ndviChange * 100).toFixed(2)}%\r\n\r\n`;
+        
+        // Add time series header
+        csvContent += "Year,Average NDVI\r\n";
+        
+        // Add time series rows
+        metrics.trend.forEach(row => {
+            csvContent += `${row.year},${(row.ndvi ?? 0).toFixed(4)}\r\n`;
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        const filename = `RehabView_Report_${(activeDistrict || activeRegion).replace(/\s+/g, '_')}_${activeYear}.csv`;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }, [activeYear, activeRegion, activeDistrict, metrics]);
 
     const handleFullscreen = useCallback(() => {
         if (!document.fullscreenElement) {
@@ -470,56 +502,259 @@ export default function Dashboard() {
 
             <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,transparent_42%,rgba(14,11,8,0.58)_100%)]" />
 
-            <div className="absolute left-4 top-4 z-40 flex items-start gap-3">
-                <GlassPanel className="pointer-events-auto w-[20rem] max-w-[calc(100vw-2rem)] rounded-2xl border-white/10">
-                    <div className="flex items-center gap-4 px-5 py-3.5">
-                        <div className="min-w-0">
-                            <h1 className="font-display text-[1.4rem] leading-none text-[#f3efe4]">Rehab<span className="text-brand-gold">Pulse</span></h1>
-                            <p className="mt-1 text-[9px] tracking-[0.14em] text-white/34 uppercase">Mine Rehabilitation Monitoring</p>
-                        </div>
+            {/* Desktop Unified Left Sidebar */}
+            <div className="absolute left-0 top-0 bottom-0 z-40 hidden md:flex w-[24rem] flex-col border-r border-white/10 bg-[#050911]/72 backdrop-blur-lg shadow-2xl pointer-events-auto">
+                {/* Brand Header */}
+                <div className="flex items-center justify-between border-b border-white/8 px-6 py-5">
+                    <div>
+                        <h1 className="font-display text-[1.4rem] leading-none text-[#f3efe4]">Rehab<span className="text-brand-gold">View</span></h1>
+                        <p className="mt-1.5 text-[9px] tracking-[0.14em] text-white/34 uppercase">NDVI Vegetation Monitoring</p>
                     </div>
-                </GlassPanel>
-            </div>
+                </div>
 
-            <div className="absolute right-4 top-4 z-40 hidden items-center gap-2 md:flex">
-                {activeYear ? (
-                    <GlassPanel className="pointer-events-auto rounded-xl px-3 py-2">
-                        <div className="flex items-center gap-2 text-[10px] text-white/62">
-                            <MapPin size={11} />
-                            <span className="font-mono">{activeDistrict || activeRegion}</span>
+                {/* Tabs */}
+                <div className="flex border-b border-white/8 shrink-0">
+                    <button
+                        onClick={() => setActiveTab('setup')}
+                        className={`flex-1 py-3.5 text-center text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === 'setup' ? 'border-b-2 border-brand-gold text-white bg-white/5' : 'text-white/40 hover:text-white/70'}`}
+                    >
+                        Configure
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('results')}
+                        className={`flex-1 py-3.5 text-center text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === 'results' ? 'border-b-2 border-brand-gold text-white bg-white/5' : 'text-white/40 hover:text-white/70'}`}
+                    >
+                        Analytics
+                    </button>
+                </div>
+
+                {/* Content Panel (Scrollable) */}
+                <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                    {activeTab === 'setup' ? (
+                        <div className="space-y-4">
+                            {metadataError ? (
+                                <div className="border border-red-500/30 bg-red-500/10 px-3 py-2 text-[9px] text-red-200/76">
+                                    <div className="flex items-start gap-2">
+                                        <AlertTriangle size={11} className="mt-0.5 shrink-0 text-red-300" />
+                                        <span>{metadataError}</span>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            <div className="space-y-2">
+                                <span className="text-[9px] tracking-[0.12em] text-white/30 uppercase">Scope</span>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {Object.entries(ANALYSIS_SCOPES).map(([scopeId, label]) => (
+                                        <button
+                                            key={scopeId}
+                                            onClick={() => {
+                                                setAnalysisScope(scopeId);
+                                                if (scopeId === 'region') setDraftDistrict('');
+                                            }}
+                                            className={`border px-3 py-2 text-[10px] font-medium transition-colors ${analysisScope === scopeId ? 'border-brand-gold/55 bg-brand-gold/10 text-[#dfbd84]' : 'border-white/10 text-white/46 hover:border-white/20 hover:text-white/78'}`}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="mb-1.5 block text-[9px] tracking-[0.12em] text-white/30 uppercase">Region</label>
+                                    <select value={draftRegion} onChange={(e) => { setDraftRegion(e.target.value); setDraftDistrict(''); }} className="h-11 w-full appearance-none border border-white/10 bg-[#0f1114] px-3 text-[11px] font-medium text-white outline-none transition-colors focus:border-brand-gold/60 cursor-pointer">
+                                        <option value="" className="bg-brand-deep">Select region</option>
+                                        {regions.map(region => <option key={region} value={region} className="bg-brand-deep">{region}</option>)}
+                                    </select>
+                                </div>
+                                {analysisScope === 'district' ? (
+                                    <div>
+                                        <div className="mb-1.5 flex items-center justify-between">
+                                            <label className="block text-[9px] tracking-[0.12em] text-white/30 uppercase">District</label>
+                                        </div>
+                                        <select value={draftDistrict} onChange={(e) => setDraftDistrict(e.target.value)} disabled={loadingDistricts || !draftRegion} className="h-11 w-full appearance-none border border-white/10 bg-[#0f1114] px-3 text-[11px] font-medium text-white outline-none transition-colors focus:border-brand-gold/60 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40">
+                                            <option value="" className="bg-brand-deep">{!draftRegion ? 'Select a region first' : 'Select district'}</option>
+                                            {districts.map(district => <option key={district} value={district} className="bg-brand-deep">{district}</option>)}
+                                        </select>
+                                        {districtsError ? <p className="mt-1 text-[9px] text-red-300/70">{districtsError}</p> : null}
+                                    </div>
+                                ) : null}
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[9px] tracking-[0.12em] text-white/30 uppercase">Year</span>
+                                    <span className="font-mono text-[12px] text-brand-gold">{draftYear}</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min={years[0] || 2015}
+                                    max={years[years.length - 1] || 2024}
+                                    step="1"
+                                    value={draftYear || years[years.length - 1] || 2024}
+                                    onChange={(e) => setDraftYear(parseInt(e.target.value))}
+                                    className="year-slider"
+                                    style={{ background: `linear-gradient(to right, #10b981 0%, #10b981 ${sliderFill}%, rgba(255,255,255,0.10) ${sliderFill}%, rgba(255,255,255,0.10) 100%)` }}
+                                />
+                                {years.length > 0 ? (
+                                    <div className="flex justify-between">
+                                        {years.map((year) => (
+                                            <span key={year} className={`font-mono text-[8px] ${parseInt(year) === draftYear ? 'text-brand-gold/78' : 'text-white/18'}`}>
+                                                {String(year).slice(-2)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : null}
+                            </div>
+
+                            <button onClick={runAnalysis} disabled={!canRunAnalysis} className="w-full bg-[#10b981] px-4 py-3 text-[10px] font-semibold tracking-[0.06em] text-[#0a1628] transition-colors hover:bg-[#34d399] disabled:cursor-not-allowed disabled:opacity-40">
+                                {hasPendingChanges && hasActiveAnalysis ? 'Update Analysis' : 'Run Analysis'}
+                            </button>
+
+                            <div>
+                                <span className="text-[10px] font-bold tracking-[0.14em] text-white/80 uppercase">Legend</span>
+                                <div className="mt-2 space-y-3">
+                                    <div>
+                                        <FloatingToggle label="Vegetation health (NDVI)" active={selectedLayers.includes('ndvi')} onToggle={() => toggleLayer('ndvi')} icon={TreePine} iconColor="#7ecb92" />
+                                        {selectedLayers.includes('ndvi') ? (
+                                            <div className="mt-1.5 pl-[26px]">
+                                                <div className="mb-2 flex items-center gap-2">
+                                                    <input
+                                                        type="range"
+                                                        min={10}
+                                                        max={100}
+                                                        value={Math.round(ndviOpacity * 100)}
+                                                        onChange={(e) => setNdviOpacity(parseInt(e.target.value) / 100)}
+                                                        className="opacity-slider flex-1"
+                                                    />
+                                                    <span className="w-7 shrink-0 text-right font-mono text-[8px] text-white/34">{Math.round(ndviOpacity * 100)}%</span>
+                                                </div>
+                                                <div
+                                                    className="h-2.5 w-full rounded-full border border-white/10"
+                                                    style={{ background: LAYER_INFO.ndvi.gradient }}
+                                                />
+                                                <div className="mt-1 flex items-center justify-between text-[8px] uppercase tracking-[0.08em] text-white/34">
+                                                    <span>{LAYER_INFO.ndvi.lowLabel}</span>
+                                                    <span>{LAYER_INFO.ndvi.highLabel}</span>
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </div>
+
+                                    {hasActiveAnalysis ? <FloatingToggle label="Region boundary" active={selectedLayers.includes('region')} onToggle={() => toggleLayer('region')} icon={Pentagon} iconColor="#c8c8c8" /> : null}
+                                    {activeDistrict ? <FloatingToggle label="District boundary" active={selectedLayers.includes('district')} onToggle={() => toggleLayer('district')} icon={Pentagon} iconColor="#d4b27a" /> : null}
+                                </div>
+                            </div>
                         </div>
-                    </GlassPanel>
-                ) : null}
-                {activeYear ? (
-                    <GlassPanel className="pointer-events-auto rounded-xl px-3 py-2">
-                        <div className="flex items-center gap-2 text-[10px] text-white/62">
-                            <Database size={11} />
-                            <span className="font-mono">{activeYear}</span>
+                    ) : (
+                        <div className="space-y-4">
+                            {!hasActiveAnalysis ? (
+                                <p className="text-[12px] leading-relaxed text-white/42">
+                                    Select an area and year under Configure, then click Run Analysis to view results.
+                                </p>
+                            ) : (
+                                <>
+                                    {metricsError ? (
+                                        <div className="border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-[10px] text-red-200/76">
+                                            <div className="flex items-start gap-2">
+                                                <AlertTriangle size={12} className="mt-0.5 shrink-0 text-red-300" />
+                                                <span>{metricsError}</span>
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    <p className="font-display text-[1.2rem] leading-snug text-[#f3efe4]">{takeaway}</p>
+
+                                    <div className="mt-5 space-y-3">
+                                        <PrimaryMetric
+                                            label="Average NDVI"
+                                            value={ndviFmt.value}
+                                            suffix={ndviFmt.suffix}
+                                            icon={TreePine}
+                                            accentClass="text-[#7ecb92]"
+                                            caption={metrics.vegetationHealth}
+                                        />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <SecondaryMetric
+                                                label="NDVI Change"
+                                                value={`${metrics.ndviChange > 0 ? '+' : ''}${(metrics.ndviChange * 100).toFixed(1)}%`}
+                                                helper="vs previous year"
+                                                icon={BarChart3}
+                                                accentClass="text-[#7ecb92]"
+                                            />
+                                            <SecondaryMetric
+                                                label="Health Status"
+                                                value={metrics.vegetationHealth || 'N/A'}
+                                                helper="vegetation condition"
+                                                icon={TreePine}
+                                                accentClass="text-[#7ecb92]"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] leading-relaxed text-white/34">
+                                            NDVI values range from 0 (bare soil) to 1 (dense vegetation).
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={downloadCSVReport}
+                                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 cursor-pointer"
+                                    >
+                                        <Download size={12} />
+                                        Download CSV Report
+                                    </button>
+
+                                    <div className="mt-5">
+                                        <div className="mb-3 flex items-center justify-between">
+                                            <span className="text-[10px] tracking-[0.12em] text-white/30 uppercase">NDVI timeline</span>
+                                            <span className="font-mono text-[10px] text-white/28">{activeYear}</span>
+                                        </div>
+                                        <LossChart data={metrics.trend} loading={loadingMetrics} />
+                                    </div>
+
+                                    <div className="mt-4 border-t border-white/8 pt-3">
+                                        <p className="text-[10px] leading-relaxed text-white/38">
+                                            Results are model-derived estimates and should be interpreted alongside field evidence.
+                                        </p>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                    </GlassPanel>
-                ) : null}
-                <div className="flex items-center gap-2.5">
-                    <GlassPanel className="pointer-events-auto rounded-xl p-1">
-                        <button onClick={() => setTourTrigger(prev => prev + 1)} className="rounded-lg px-3.5 py-2 text-[10px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
-                            <span className="flex items-center gap-2"><HelpCircle size={11} /> Help</span>
+                    )}
+                </div>
+
+                {/* Desktop Sidebar Footer */}
+                <div className="border-t border-white/8 px-6 py-4 bg-black/20 flex flex-col gap-3 shrink-0">
+                    {activeYear ? (
+                        <div className="flex gap-2">
+                            <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[9px] text-white/60">
+                                <MapPin size={10} />
+                                <span className="font-mono">{activeDistrict || activeRegion}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[9px] text-white/60">
+                                <Database size={10} />
+                                <span className="font-mono">{activeYear}</span>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    <div className="grid grid-cols-3 gap-2">
+                        <button onClick={() => setTourTrigger(prev => prev + 1)} className="flex items-center justify-center gap-1 border border-white/10 rounded-lg py-2 text-[9px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
+                            <HelpCircle size={10} /> Help
                         </button>
-                    </GlassPanel>
-                    <GlassPanel className="pointer-events-auto rounded-xl p-1">
-                        <button onClick={() => setIsAboutOpen(true)} className="rounded-lg px-3.5 py-2 text-[10px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
-                            <span className="flex items-center gap-2"><Info size={11} /> About</span>
+                        <button onClick={() => setIsAboutOpen(true)} className="flex items-center justify-center gap-1 border border-white/10 rounded-lg py-2 text-[9px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
+                            <Info size={10} /> About
                         </button>
-                    </GlassPanel>
-                    <GlassPanel className="pointer-events-auto rounded-xl p-1">
-                        <button onClick={() => setIsRequestOpen(true)} className="rounded-lg px-3.5 py-2 text-[10px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
-                            <span className="flex items-center gap-2"><Send size={11} /> Request Data</span>
+                        <button onClick={() => setIsRequestOpen(true)} className="flex items-center justify-center gap-1 border border-white/10 rounded-lg py-2 text-[9px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
+                            <Send size={10} /> Request
                         </button>
-                    </GlassPanel>
+                    </div>
                 </div>
             </div>
 
+            {/* Mobile overlays (only displayed on mobile) */}
             {mobilePanel !== null ? <div className="fixed inset-0 z-30 bg-black/55 md:hidden" onClick={() => setMobilePanel(null)} /> : null}
 
-            <div id="tour-setup-panel" className={`absolute right-4 top-24 z-40 w-[20rem] max-w-[calc(100vw-2rem)] transition-transform duration-300 ${isMobile ? (mobilePanel === 'setup' ? 'translate-y-0' : '-translate-y-[120%]') : ''}`}>
+            <div id="tour-setup-panel" className={`absolute right-4 top-24 z-40 w-[20rem] max-w-[calc(100vw-2rem)] md:hidden transition-transform duration-300 ${isMobile ? (mobilePanel === 'setup' ? 'translate-y-0' : '-translate-y-[120%]') : ''}`}>
                 <GlassPanel className="pointer-events-auto rounded-2xl border-white/10">
                     <div className="border-b border-white/8 px-4 py-3">
                         <div className="flex items-start justify-between gap-3">
@@ -528,13 +763,6 @@ export default function Dashboard() {
                                 <p className="mt-1 text-[10px] leading-snug text-white/50">Choose area and year, then run the analysis.</p>
                             </div>
                             <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => setIsSetupOpen(prev => !prev)}
-                                    className="rounded-lg p-2 text-white/34 transition-colors hover:bg-white/6 hover:text-white"
-                                    title={isSetupOpen ? 'Collapse setup' : 'Expand setup'}
-                                >
-                                    {isSetupOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                </button>
                                 <button onClick={resetDashboard} className="rounded-lg p-2 text-white/34 transition-colors hover:bg-white/6 hover:text-white" title="Reset">
                                     <RotateCcw size={12} />
                                 </button>
@@ -542,7 +770,6 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {isSetupOpen && (
                     <div className="space-y-4 px-4 py-4">
                         {metadataError ? (
                             <div className="border border-red-500/30 bg-red-500/10 px-3 py-2 text-[9px] text-red-200/76">
@@ -574,7 +801,7 @@ export default function Dashboard() {
                         <div className="space-y-3">
                             <div>
                                 <label className="mb-1.5 block text-[9px] tracking-[0.12em] text-white/30 uppercase">Region</label>
-                                <select value={draftRegion} onChange={(e) => { setDraftRegion(e.target.value); setDraftDistrict(''); }} className="h-11 w-full appearance-none border border-white/10 bg-[#0f1114] px-3 text-[11px] font-medium text-white outline-none transition-colors focus:border-brand-gold/60">
+                                <select value={draftRegion} onChange={(e) => { setDraftRegion(e.target.value); setDraftDistrict(''); }} className="h-11 w-full appearance-none border border-white/10 bg-[#0f1114] px-3 text-[11px] font-medium text-white outline-none transition-colors focus:border-brand-gold/60 cursor-pointer">
                                     <option value="" className="bg-brand-deep">Select region</option>
                                     {regions.map(region => <option key={region} value={region} className="bg-brand-deep">{region}</option>)}
                                 </select>
@@ -584,7 +811,7 @@ export default function Dashboard() {
                                     <div className="mb-1.5 flex items-center justify-between">
                                         <label className="block text-[9px] tracking-[0.12em] text-white/30 uppercase">District</label>
                                     </div>
-                                    <select value={draftDistrict} onChange={(e) => setDraftDistrict(e.target.value)} disabled={loadingDistricts || !draftRegion} className="h-11 w-full appearance-none border border-white/10 bg-[#0f1114] px-3 text-[11px] font-medium text-white outline-none transition-colors focus:border-brand-gold/60 disabled:cursor-not-allowed disabled:opacity-40">
+                                    <select value={draftDistrict} onChange={(e) => setDraftDistrict(e.target.value)} disabled={loadingDistricts || !draftRegion} className="h-11 w-full appearance-none border border-white/10 bg-[#0f1114] px-3 text-[11px] font-medium text-white outline-none transition-colors focus:border-brand-gold/60 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40">
                                         <option value="" className="bg-brand-deep">{!draftRegion ? 'Select a region first' : 'Select district'}</option>
                                         {districts.map(district => <option key={district} value={district} className="bg-brand-deep">{district}</option>)}
                                     </select>
@@ -608,152 +835,45 @@ export default function Dashboard() {
                                 className="year-slider"
                                 style={{ background: `linear-gradient(to right, #10b981 0%, #10b981 ${sliderFill}%, rgba(255,255,255,0.10) ${sliderFill}%, rgba(255,255,255,0.10) 100%)` }}
                             />
-                            {years.length > 0 ? (
-                                <div className="flex justify-between">
-                                    {years.map((year) => (
-                                        <span key={year} className={`font-mono text-[8px] ${parseInt(year) === draftYear ? 'text-brand-gold/78' : 'text-white/18'}`}>
-                                            {String(year).slice(-2)}
-                                        </span>
-                                    ))}
-                                </div>
-                            ) : null}
                         </div>
 
                         <button onClick={runAnalysis} disabled={!canRunAnalysis} className="w-full bg-[#10b981] px-4 py-3 text-[10px] font-semibold tracking-[0.06em] text-[#0a1628] transition-colors hover:bg-[#34d399] disabled:cursor-not-allowed disabled:opacity-40">
-                            {hasPendingChanges && hasActiveAnalysis ? 'Update Analysis' : 'Run Analysis'}
+                            Run Analysis
                         </button>
 
                         <div>
                             <span className="text-[10px] font-bold tracking-[0.14em] text-white/80 uppercase">Legend</span>
                             <div className="mt-2 space-y-3">
-                                <div>
-                                    <FloatingToggle label="Vegetation health (NDVI)" active={selectedLayers.includes('ndvi')} onToggle={() => toggleLayer('ndvi')} icon={TreePine} iconColor="#7ecb92" />
-                                    {selectedLayers.includes('ndvi') ? (
-                                        <div className="mt-1.5 pl-[26px]">
-                                            <div className="mb-2 flex items-center gap-2">
-                                                <input
-                                                    type="range"
-                                                    min={10}
-                                                    max={100}
-                                                    value={Math.round(ndviOpacity * 100)}
-                                                    onChange={(e) => setNdviOpacity(parseInt(e.target.value) / 100)}
-                                                    className="opacity-slider flex-1"
-                                                />
-                                                <span className="w-7 shrink-0 text-right font-mono text-[8px] text-white/34">{Math.round(ndviOpacity * 100)}%</span>
-                                            </div>
-                                            <div
-                                                className="h-2.5 w-full rounded-full border border-white/10"
-                                                style={{ background: LAYER_INFO.ndvi.gradient }}
-                                            />
-                                            <div className="mt-1 flex items-center justify-between text-[8px] uppercase tracking-[0.08em] text-white/34">
-                                                <span>{LAYER_INFO.ndvi.lowLabel}</span>
-                                                <span>{LAYER_INFO.ndvi.highLabel}</span>
-                                            </div>
-                                        </div>
-                                    ) : null}
-                                </div>
-
-                                {hasActiveAnalysis ? <FloatingToggle label="Region boundary" active={selectedLayers.includes('region')} onToggle={() => toggleLayer('region')} icon={Pentagon} iconColor="#c8c8c8" /> : null}
-                                {activeDistrict ? <FloatingToggle label="District boundary" active={selectedLayers.includes('district')} onToggle={() => toggleLayer('district')} icon={Pentagon} iconColor="#d4b27a" /> : null}
+                                <FloatingToggle label="Vegetation health (NDVI)" active={selectedLayers.includes('ndvi')} onToggle={() => toggleLayer('ndvi')} icon={TreePine} iconColor="#7ecb92" />
                             </div>
                         </div>
                     </div>
-                    )}
                 </GlassPanel>
             </div>
 
-            <div id="tour-findings-panel" className={`absolute left-4 top-24 z-40 flex max-h-[calc(100vh-7rem)] w-[24rem] max-w-[calc(100vw-2rem)] flex-col ${isMobile ? (mobilePanel === 'findings' ? 'translate-y-0' : '-translate-y-[120%] transition-transform duration-300') : ''}`}>
+            <div id="tour-findings-panel" className={`absolute left-4 top-24 z-40 flex max-h-[calc(100vh-7rem)] w-[20rem] max-w-[calc(100vw-2rem)] flex-col md:hidden transition-transform duration-300 ${isMobile ? (mobilePanel === 'findings' ? 'translate-y-0' : '-translate-y-[120%]') : ''}`}>
                 <GlassPanel className="pointer-events-auto flex flex-col border-white/10">
                     <div className="shrink-0 border-b border-white/8 px-5 py-3.5">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-bold tracking-[0.14em] text-white/80 uppercase">Analysis Results</p>
-                                <p className="mt-1 text-[11px] leading-snug text-white/50">{activeDistrict || activeRegion || 'Select an area and year'}</p>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                    onClick={() => setIsFindingsOpen(prev => !prev)}
-                                    className="rounded-lg p-1.5 text-white/34 transition-colors hover:bg-white/6 hover:text-white"
-                                    title={isFindingsOpen ? 'Collapse' : 'Expand'}
-                                >
-                                    {isFindingsOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                </button>
-                            </div>
-                        </div>
+                        <p className="text-[10px] font-bold tracking-[0.14em] text-white/80 uppercase">Analysis Results</p>
                     </div>
-
-                    {isFindingsOpen && (
                     <div className="custom-scrollbar overflow-y-auto px-5 py-5">
                         {!hasActiveAnalysis ? (
-                            <p className="text-[12px] leading-relaxed text-white/42">
-                                Run an analysis to view summary metrics and time series.
-                            </p>
+                            <p className="text-[12px] leading-relaxed text-white/42">Run analysis to view results.</p>
                         ) : (
                             <>
-                                {metricsError ? (
-                                    <div className="border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-[10px] text-red-200/76">
-                                        <div className="flex items-start gap-2">
-                                            <AlertTriangle size={12} className="mt-0.5 shrink-0 text-red-300" />
-                                            <span>{metricsError}</span>
-                                        </div>
-                                    </div>
-                                ) : null}
-
                                 <p className="font-display text-[1.2rem] leading-snug text-[#f3efe4]">{takeaway}</p>
-
-                                <div className="mt-5 space-y-3">
-                                    <PrimaryMetric
-                                        label="Average NDVI"
-                                        value={ndviFmt.value}
-                                        suffix={ndviFmt.suffix}
-                                        icon={TreePine}
-                                        accentClass="text-[#7ecb92]"
-                                        caption={metrics.vegetationHealth}
-                                    />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <SecondaryMetric
-                                            label="NDVI Change"
-                                            value={`${metrics.ndviChange > 0 ? '+' : ''}${(metrics.ndviChange * 100).toFixed(1)}%`}
-                                            helper="vs previous year"
-                                            icon={BarChart3}
-                                            accentClass="text-[#7ecb92]"
-                                        />
-                                        <SecondaryMetric
-                                            label="Health Status"
-                                            value={metrics.vegetationHealth || 'N/A'}
-                                            helper="vegetation condition"
-                                            icon={TreePine}
-                                            accentClass="text-[#7ecb92]"
-                                        />
-                                    </div>
-                                    <p className="text-[10px] leading-relaxed text-white/34">
-                                        NDVI values range from 0 (bare soil) to 1 (dense vegetation).
-                                    </p>
-                                </div>
-
-                                <div className="mt-5">
-                                    <div className="mb-3 flex items-center justify-between">
-                                        <span className="text-[10px] tracking-[0.12em] text-white/30 uppercase">NDVI timeline</span>
-                                        <span className="font-mono text-[10px] text-white/28">{activeYear}</span>
-                                    </div>
-                                    <LossChart data={metrics.trend} loading={loadingMetrics} />
-                                </div>
-
-                                <div className="mt-4 border-t border-white/8 pt-3">
-                                    <p className="text-[10px] leading-relaxed text-white/38">
-                                        Results are model-derived estimates and should be interpreted alongside field evidence.
-                                    </p>
+                                <div className="mt-4">
+                                    <PrimaryMetric label="Average NDVI" value={ndviFmt.value} suffix={ndviFmt.suffix} icon={TreePine} accentClass="text-[#7ecb92]" caption={metrics.vegetationHealth} />
                                 </div>
                             </>
                         )}
                     </div>
-                    )}
                 </GlassPanel>
             </div>
 
 
-            {/* Map controls — bottom-centre, horizontal, clear of both panels */}
-            <div className="absolute bottom-6 left-1/2 z-40 hidden -translate-x-1/2 md:flex items-center gap-2">
+            {/* Map controls — bottom-right, clear of the left sidebar */}
+            <div className="absolute bottom-6 right-6 z-40 hidden md:flex items-center gap-2">
                 {/* Compass */}
                 <button onClick={() => setMapCommand({ type: 'reset', t: Date.now() })} title="Reset view" className="map-ctrl flex h-11 w-11 items-center justify-center rounded-2xl transition-colors hover:bg-white/6">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -819,10 +939,11 @@ export default function Dashboard() {
                     <Share2 size={16} strokeWidth={1.6} />
                 </button>
 
-                {/* Fullscreen */}
+                {/* Fullscreen — commented out
                 <button onClick={handleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} className="map-ctrl flex h-11 w-11 items-center justify-center rounded-2xl text-white/55 transition-colors hover:bg-white/6 hover:text-white">
                     {isFullscreen ? <Minimize2 size={16} strokeWidth={1.6} /> : <Maximize2 size={16} strokeWidth={1.6} />}
                 </button>
+                */}
             </div>
 
             <DisclaimerModal isOpen={isDisclaimerOpen} onAccept={handleDisclaimerAccept} />
@@ -907,4 +1028,5 @@ export default function Dashboard() {
         </div>
     );
 }
+
 

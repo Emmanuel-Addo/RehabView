@@ -1,5 +1,5 @@
 import { X, Layers } from 'lucide-react';
-import { GlassPanel } from './GlassPanel';
+import { GlassPanel } from '@/components/ui/GlassPanel.jsx';
 
 const ALL_LEGEND_ITEMS = [
     {
@@ -101,3 +101,4 @@ export const LegendPanel = ({ isOpen, onClose, activeLayers = [], className = ''
         </div>
     );
 };
+

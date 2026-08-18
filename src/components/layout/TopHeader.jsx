@@ -8,10 +8,10 @@ export const TopHeader = ({ selectedYear, selectedRegion, selectedDistrict, onTo
             <div className="flex items-center gap-3">
                 <div>
                     <h1 className="font-display text-[1.05rem] font-medium leading-none text-[#f3efe4]">
-                        Rehab<span className="text-brand-gold">Pulse</span>
+                        Rehab<span className="text-brand-gold">View</span>
                     </h1>
                     <p className="mt-0.5 text-[9px] font-medium tracking-[0.02em] text-white/38">
-                        Mine Rehabilitation Monitoring
+                        NDVI Vegetation Monitoring
                     </p>
                 </div>
             </div>

@@ -20,8 +20,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "RehabView Ghana | Mine Rehabilitation Monitoring",
-  description: "Satellite-derived vegetation recovery monitoring on artisanal mining sites in Ghana.",
+  title: "RehabView Ghana | NDVI Monitoring",
+  description: "Check vegetation health by region and district in Ghana using NDVI satellite data.",
+  icons: { icon: [] },
 };
 
 export default function RootLayout({ children }) {

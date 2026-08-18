@@ -27,7 +27,6 @@ body {
     background: var(--background);
     font-family: var(--font-ui), sans-serif;
     letter-spacing: -0.01em;
-    overflow: hidden;
 }
 
 h1, h2, h3, .font-display {
@@ -276,3 +275,6 @@ select:focus {
     border: none;
     transition: background 0.15s ease;
 }
+
+button, select, [role='button'] { cursor: pointer !important; }
+

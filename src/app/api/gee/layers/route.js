@@ -29,7 +29,7 @@ export async function POST(request) {
         if (district) {
             areaOfInterest = districtsFC.filter(ee.Filter.and(
                 ee.Filter.eq('REGION', region),
-                ee.Filter.eq('Dist_Name', district)
+                ee.Filter.eq('DISTRICT', district)
             ));
         } else {
             areaOfInterest = regionsFC.filter(ee.Filter.eq('REGION_1', region));
