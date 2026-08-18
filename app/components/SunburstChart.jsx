@@ -1,5 +1,4 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2 } from 'lucide-react';
 
 const CustomTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;
@@ -29,14 +28,6 @@ const fmt = (v) =>
             : v.toFixed(0);
 
 export const CarbonBalanceChart = ({ carbonStock = 0, carbonLoss = 0, loading }) => {
-    if (loading) {
-        return (
-            <div className="flex-1 flex items-center justify-center">
-                <Loader2 size={16} className="animate-spin text-brand-gold/30" />
-            </div>
-        );
-    }
-
     const total = carbonStock + carbonLoss;
 
     if (total === 0) {

@@ -20,7 +20,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "RehabPulse Ghana | Mine Rehabilitation Monitoring",
+  title: "RehabView Ghana | Mine Rehabilitation Monitoring",
   description: "Satellite-derived vegetation recovery monitoring on artisanal mining sites in Ghana.",
 };
 
@@ -36,3 +36,4 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+

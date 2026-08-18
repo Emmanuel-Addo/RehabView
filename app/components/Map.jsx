@@ -55,7 +55,7 @@ function HoverLayer({ data }) {
     return (
         <GeoJSON
             data={data}
-            style={() => ({ stroke: false, fillOpacity: 0.001 })}
+            style={() => ({ stroke: false, fillOpacity: 0.001, className: 'cursor-pointer' })}
             onEachFeature={(feature, layer) => {
                 const name = feature.properties?.DISTRICTS || feature.properties?.REGIONS || '';
                 if (!name) return;
@@ -102,9 +102,8 @@ export default function MapComponent({
     mapCommand,
     basemap = 'dark',
     ndviOpacity = 1,
-    rehabilitationOpacity = 1,
 }) {
-    const [layers, setLayers] = useState({ ndvi: null, rehabilitation: null, region: null, district: null });
+    const [layers, setLayers] = useState({ ndvi: null, region: null, district: null });
     const [prevLayers, setPrevLayers] = useState(null);
     const [fetchedFilters, setFetchedFilters] = useState({ year: null, region: null, district: null });
     const [bounds, setBounds] = useState(null);
@@ -118,8 +117,8 @@ export default function MapComponent({
     }, [layers]);
 
     useEffect(() => {
-        if (!year) {
-            setLayers({ ndvi: null, rehabilitation: null, region: null, district: null });
+        if (!year || !region) {
+            setLayers({ ndvi: null, region: null, district: null });
             setPrevLayers(null);
             setFetchedFilters({ year: null, region: null, district: null });
             setBounds(null);
@@ -178,23 +177,6 @@ export default function MapComponent({
 
     return (
         <div className="relative h-full w-full">
-            {loading && (
-                <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-brand-deep/30 backdrop-blur-[2px] pointer-events-none">
-                    <div className="relative flex h-16 w-16 items-center justify-center">
-                        <div className="canopy-ring" />
-                        <div className="canopy-ring" />
-                        <div className="canopy-ring" />
-                        <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-brand-gold/30 bg-brand-deep/80">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(251,191,36,0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 8c0-4-2.5-6-5-6S7 4 7 8c-2 0-4 1.5-4 4s2 4 4 4h10c2 0 4-1.5 4-4s-2-4-4-4z" />
-                                <line x1="12" y1="16" x2="12" y2="21" />
-                                <line x1="8" y1="21" x2="16" y2="21" />
-                            </svg>
-                        </div>
-                    </div>
-                    <p className="mt-4 text-[10px] font-semibold tracking-wider text-brand-gold/60">Refreshing map layers...</p>
-                </div>
-            )}
             <MapContainer
                 center={[7.9, -1.2]}
                 zoom={9}
@@ -207,9 +189,6 @@ export default function MapComponent({
                 {layers.ndvi && activeLayers.includes('ndvi') && fetchedFilters.year === year && (
                     <TileLayer url={layers.ndvi} opacity={ndviOpacity} zIndex={10} />
                 )}
-                {layers.rehabilitation && activeLayers.includes('rehabilitation') && fetchedFilters.year === year && (
-                    <TileLayer url={layers.rehabilitation} opacity={rehabilitationOpacity} zIndex={20} />
-                )}
                 {layers.region && activeLayers.includes('region') && fetchedFilters.region === region && (
                     <TileLayer url={layers.region} zIndex={30} />
                 )}
@@ -220,7 +199,6 @@ export default function MapComponent({
                 {prevLayers && (
                     <>
                         {prevLayers.ndvi && activeLayers.includes('ndvi') && <TileLayer url={prevLayers.ndvi} opacity={0.3} zIndex={9} />}
-                        {prevLayers.rehabilitation && activeLayers.includes('rehabilitation') && <TileLayer url={prevLayers.rehabilitation} opacity={0.3} zIndex={19} />}
                         {prevLayers.region && activeLayers.includes('region') && <TileLayer url={prevLayers.region} opacity={0.3} zIndex={29} />}
                         {prevLayers.district && activeLayers.includes('district') && <TileLayer url={prevLayers.district} opacity={0.3} zIndex={39} />}
                     </>

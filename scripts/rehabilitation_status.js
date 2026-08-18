@@ -1,4 +1,4 @@
-// RehabPulse Ghana - Rehabilitation Status Calculation Script
+// RehabView Ghana - Rehabilitation Status Calculation Script
 // This script classifies mine rehabilitation status based on NDVI changes
 
 // Define study area
@@ -117,15 +117,15 @@ var rehabWithHectares = allRehabStats.map(function(feature) {
 // Export to Google Drive
 Export.table.toDrive({
   collection: rehabWithHectares,
-  description: 'rehabpulse_rehabilitation_statistics',
-  folder: 'RehabPulse_Ghana',
+  description: 'RehabView_rehabilitation_statistics',
+  folder: 'RehabView_Ghana',
   fileFormat: 'CSV'
 });
 
 // Export as GEE FeatureCollection
 Export.table.toAsset({
   collection: rehabWithHectares,
-  description: 'rehabpulse_rehabilitation_feature_collection',
+  description: 'RehabView_rehabilitation_feature_collection',
   assetId: 'projects/your-project/assets/rehabilitation-feature-collection'
 });
 
@@ -141,3 +141,4 @@ Map.centerObject(studyArea, 9);
 Map.addLayer(annualRehab.filter(ee.Filter.eq('YEAR', 2024)).first(), rehabVis, 'Rehabilitation Status 2024');
 
 print('Rehabilitation status calculation complete. Check Tasks tab to run export.');
+

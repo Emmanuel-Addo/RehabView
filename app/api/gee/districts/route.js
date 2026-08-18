@@ -13,25 +13,37 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Region is required' }, { status: 400 });
         }
 
-        const miningFootprintsFc = ee.FeatureCollection(config.MINING_FOOTPRINTS_FC);
+        const fc = ee.FeatureCollection(config.DISTRICTS_FC);
 
-        // Filter MINING_FOOTPRINTS_FC by the selected region
-        const filteredFc = miningFootprintsFc.filter(ee.Filter.eq('REGIONS', region));
+        const count = await new Promise((res, rej) => {
+            fc.size().evaluate((data, err) => {
+                err ? rej(err) : res(data);
+            });
+        });
 
-        // Get districts from the filtered FeatureCollection
+        const sampleDistrict = await new Promise((res, rej) => {
+            fc.first().evaluate((data, err) => {
+                err ? rej(err) : res(data);
+            });
+        });
+
+        const filtered = fc.filter(ee.Filter.stringStartsWith('REGION', region.substring(0, 4)));
+
         const districts = await new Promise((res, rej) => {
-            filteredFc.aggregate_array('DISTRICTS').distinct().sort().evaluate((data, err) => {
+            filtered.aggregate_array('Dist_Name').distinct().sort().evaluate((data, err) => {
                 err ? rej(err) : res(data || []);
             });
         });
 
-        return NextResponse.json({ districts });
+        return NextResponse.json({
+            districts,
+            totalCount: count,
+            sampleProperties: sampleDistrict ? Object.keys(sampleDistrict.properties || {}) : [],
+            sampleRegion: sampleDistrict?.properties?.REGION,
+        });
 
     } catch (error) {
-        console.error('GEE Districts Error:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch districts', details: error.message },
-            { status: 500 }
-        );
+        console.error('GEE Districts Error:', error.message);
+        return NextResponse.json({ districts: [] });
     }
 }

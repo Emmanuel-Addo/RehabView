@@ -11,14 +11,6 @@ const ALL_LEGEND_ITEMS = [
         highLabel: 'Dense vegetation',
     },
     {
-        id: 'rehabilitation',
-        label: 'Rehabilitation Status',
-        desc: 'No recovery to full recovery',
-        gradient: 'linear-gradient(90deg,#dc2626 0%,#f97316 24%,#eab308 52%,#22c55e 78%,#15803d 100%)',
-        lowLabel: 'No recovery',
-        highLabel: 'Full recovery',
-    },
-    {
         id: 'region',
         swatch: 'border-2 border-white/80 bg-transparent',
         label: 'Region',
@@ -26,9 +18,9 @@ const ALL_LEGEND_ITEMS = [
     },
     {
         id: 'district',
-        swatch: 'border-2 border-yellow-400 bg-transparent',
+        swatch: 'border-2 border-cyan-400 bg-transparent',
         label: 'District',
-        desc: 'Focus area boundary',
+        desc: 'District boundary',
     },
 ];
 

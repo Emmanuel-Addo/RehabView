@@ -35,7 +35,7 @@ export function DisclaimerModal({ isOpen = false, onAccept }) {
                 {/* Body */}
                 <div className="px-6 py-6 space-y-4">
                     <p className="text-[12px] leading-relaxed text-white/72">
-                        RehabPulse Ghana is based on satellite imagery and modelled estimates. NDVI values and rehabilitation status should be treated as approximations.
+                        RehabView Ghana is based on satellite imagery and modelled estimates. NDVI values and rehabilitation status should be treated as approximations.
                     </p>
                     <div className="space-y-2">
                         <p className="text-[11px] leading-relaxed text-white/48"><span className="mr-2 font-semibold text-brand-gold/50">1.</span>Results may contain misclassification, cloud artefacts, and temporal gaps introduced during image processing.</p>
@@ -58,3 +58,4 @@ export function DisclaimerModal({ isOpen = false, onAccept }) {
         </div>
     );
 }
+

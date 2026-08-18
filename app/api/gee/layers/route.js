@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { initializeEE, getEE, getConfig } from '@/lib/gee-server';
 
 const NDVI_PALETTE = ['#8B4513', '#D2691E', '#9ACD32', '#228B22', '#006400'];
-const REHABILITATION_PALETTE = ['#dc2626', '#f97316', '#eab308', '#22c55e', '#15803d'];
 
 export async function POST(request) {
     try {
@@ -19,75 +18,48 @@ export async function POST(request) {
 
         const { year, region, district } = payload;
 
-        if (!year) {
-            return NextResponse.json({ error: 'Year is required' }, { status: 400 });
+        if (!year || !region) {
+            return NextResponse.json({ error: 'Year and region are required' }, { status: 400 });
         }
 
-        const ndviImg = ee.ImageCollection(config.NDVI_VIS)
-            .filter(ee.Filter.eq('YEAR', year))
-            .mosaic();
+        const regionsFC = ee.FeatureCollection(config.REGIONS_FC);
+        const districtsFC = ee.FeatureCollection(config.DISTRICTS_FC);
 
-        const rehabilitationImg = ee.ImageCollection(config.REHABILITATION_VIS)
-            .filter(ee.Filter.eq('YEAR', year))
-            .mosaic();
-
-        // National view — no region selected, skip boundaries and hover GeoJSON
-        if (!region) {
-            const pilotArea = ee.FeatureCollection(config.PILOT_AREA);
-            const [ndviMapId, rehabilitationMapId, nationalBounds] = await Promise.all([
-                new Promise((res, rej) => ndviImg.getMapId({ min: 0, max: 1, palette: NDVI_PALETTE }, (id, err) => err ? rej(err) : res(id))),
-                new Promise((res, rej) => rehabilitationImg.getMapId({ min: 0, max: 4, palette: REHABILITATION_PALETTE }, (id, err) => err ? rej(err) : res(id))),
-                new Promise((res, rej) => pilotArea.geometry().bounds().getInfo((geo, err) => {
-                    if (err) return rej(err);
-                    if (!geo || !geo.coordinates) return res(null);
-                    const coords = geo.coordinates[0];
-                    const lats = coords.map(c => c[1]);
-                    const lngs = coords.map(c => c[0]);
-                    res([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]]);
-                })),
-            ]);
-            return NextResponse.json({
-                layers: { ndvi: ndviMapId.urlFormat, rehabilitation: rehabilitationMapId.urlFormat, region: null, district: null },
-                bounds: nationalBounds,
-                hoverGeoJSON: null,
-            });
-        }
-
-        // Regional / district view
-        let areaOfInterest = ee.FeatureCollection(config.PILOT_AREA);
-        let boundsGeometry = areaOfInterest.geometry();
-
+        let areaOfInterest;
         if (district) {
-            const dFeature = ee.FeatureCollection(config.MINING_FOOTPRINTS_FC)
-                .filter(ee.Filter.eq('DISTRICTS', district));
-            areaOfInterest = dFeature;
-            boundsGeometry = dFeature.geometry();
+            areaOfInterest = districtsFC.filter(ee.Filter.and(
+                ee.Filter.eq('REGION', region),
+                ee.Filter.eq('Dist_Name', district)
+            ));
         } else {
-            const rFeature = ee.FeatureCollection(config.NDVI_FC)
-                .filter(ee.Filter.eq('REGIONS', region));
-            areaOfInterest = rFeature;
-            boundsGeometry = rFeature.geometry();
+            areaOfInterest = regionsFC.filter(ee.Filter.eq('REGION_1', region));
         }
 
-        const regionFC = ee.FeatureCollection(config.NDVI_FC)
-            .filter(ee.Filter.eq('REGIONS', region));
-        const regionBoundaryImg = ee.Image().paint(regionFC, 0, 1.5);
+        const areaGeometry = areaOfInterest.geometry();
 
-        let districtFC = district
-            ? ee.FeatureCollection(config.MINING_FOOTPRINTS_FC).filter(ee.Filter.eq('DISTRICTS', district))
-            : ee.FeatureCollection([]);
-        const districtBoundaryImg = ee.Image().paint(districtFC, 0, 2);
+        const startDate = ee.Date.fromYMD(year, 1, 1);
+        const endDate = ee.Date.fromYMD(year, 12, 31);
 
-        // District GeoJSON for hover tooltips — simplified to 500m to keep response small
-        const hoverFC = ee.FeatureCollection(config.MINING_FOOTPRINTS_FC).filter(ee.Filter.eq('REGIONS', region));
-        const simplifiedHoverFC = hoverFC.map(f => f.simplify(500));
+        const s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+            .filterDate(startDate, endDate)
+            .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+            .filterBounds(areaGeometry);
 
-        const [ndviMapId, rehabilitationMapId, regionMapId, districtMapId, bounds, hoverGeoJSON] = await Promise.all([
-            new Promise((res, rej) => ndviImg.getMapId({ min: 0, max: 1, palette: NDVI_PALETTE }, (id, err) => err ? rej(err) : res(id))),
-            new Promise((res, rej) => rehabilitationImg.getMapId({ min: 0, max: 4, palette: REHABILITATION_PALETTE }, (id, err) => err ? rej(err) : res(id))),
+        const composite = s2.median();
+        const ndvi = composite.normalizedDifference(['B8', 'B4']).rename('NDVI');
+        const ndviClipped = ndvi.clipToCollection(areaOfInterest);
+
+        const regionBoundary = regionsFC.filter(ee.Filter.eq('REGION_1', region));
+        const regionBoundaryImg = ee.Image().paint(regionBoundary, 0, 2);
+
+        const districtBoundary = districtsFC.filter(ee.Filter.eq('REGION', region));
+        const districtBoundaryImg = ee.Image().paint(districtBoundary, 0, 1);
+
+        const [ndviMapId, regionMapId, districtMapId, bounds, hoverGeoJSON] = await Promise.all([
+            new Promise((res, rej) => ndviClipped.getMapId({ min: 0, max: 1, palette: NDVI_PALETTE }, (id, err) => err ? rej(err) : res(id))),
             new Promise((res, rej) => regionBoundaryImg.getMapId({ palette: 'white' }, (id, err) => err ? rej(err) : res(id))),
-            new Promise((res, rej) => districtBoundaryImg.getMapId({ palette: 'yellow' }, (id, err) => err ? rej(err) : res(id))),
-            new Promise((res, rej) => boundsGeometry.bounds().getInfo((geo, err) => {
+            new Promise((res, rej) => districtBoundaryImg.getMapId({ palette: 'cyan' }, (id, err) => err ? rej(err) : res(id))),
+            new Promise((res, rej) => areaGeometry.bounds().getInfo((geo, err) => {
                 if (err) return rej(err);
                 if (!geo || !geo.coordinates) return res(null);
                 const coords = geo.coordinates[0];
@@ -95,13 +67,18 @@ export async function POST(request) {
                 const lngs = coords.map(c => c[0]);
                 res([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]]);
             })),
-            new Promise((res, rej) => simplifiedHoverFC.getInfo((data, err) => err ? rej(err) : res(data))),
+            new Promise((res, rej) => {
+                const hoverFC = district
+                    ? districtsFC.filter(ee.Filter.eq('REGION', region))
+                    : regionBoundary;
+                const simplified = hoverFC.map(f => f.simplify(500));
+                simplified.getInfo((data, err) => err ? rej(err) : res(data));
+            }),
         ]);
 
         return NextResponse.json({
             layers: {
                 ndvi: ndviMapId.urlFormat,
-                rehabilitation: rehabilitationMapId.urlFormat,
                 region: regionMapId.urlFormat,
                 district: districtMapId.urlFormat,
             },
@@ -110,10 +87,11 @@ export async function POST(request) {
         });
 
     } catch (error) {
-        console.error('GEE Layers Error:', error);
-        return NextResponse.json(
-            { error: 'Failed to generate map layers', details: error.message },
-            { status: 500 }
-        );
+        console.error('GEE Layers Error:', error.message);
+        return NextResponse.json({
+            layers: { ndvi: null, region: null, district: null },
+            bounds: null,
+            hoverGeoJSON: null,
+        });
     }
 }

@@ -12,20 +12,18 @@ import {
     HelpCircle,
     Info,
     Layers,
-    Loader2,
     MapPin,
-    Pentagon,
     Maximize2,
     Menu,
     Minimize2,
     Minus,
     MoreHorizontal,
+    Pentagon,
     Plus,
     RotateCcw,
     Send,
     Share2,
     TreePine,
-    Pickaxe,
 } from 'lucide-react';
 
 import { GlassPanel } from './GlassPanel.jsx';
@@ -35,8 +33,8 @@ import { DisclaimerModal } from './DisclaimerModal.jsx';
 import { RequestDataModal } from './RequestDataModal.jsx';
 import { LossChart } from './LossChart.jsx';
 
-const ABOUT_KEY = 'rehabpulse_about_seen';
-const DISCLAIMER_KEY = 'rehabpulse_disclaimer_seen';
+const ABOUT_KEY = 'RehabView_about_seen';
+const DISCLAIMER_KEY = 'RehabView_disclaimer_seen';
 const ANALYSIS_SCOPES = {
     region: 'Region',
     district: 'District',
@@ -51,52 +49,34 @@ const LAYER_INFO = {
         lowLabel: 'Bare soil',
         highLabel: 'Dense vegetation',
     },
-    rehabilitation: {
-        name: 'Rehabilitation status',
-        source: 'CERSGIS mining footprints + NDVI analysis',
-        dot: 'bg-amber-500',
-        gradient: 'linear-gradient(90deg,#dc2626 0%,#f97316 24%,#eab308 52%,#22c55e 78%,#15803d 100%)',
-        lowLabel: 'No recovery',
-        highLabel: 'Full recovery',
-    },
-    region: { name: 'Region boundary', source: 'Ghana Statistical Service (GSS)', dot: 'bg-white/50' },
-    district: { name: 'District boundary', source: 'Ghana Statistical Service (GSS)', dot: 'bg-yellow-400' },
+    region: { name: 'Region boundary', source: 'Ghana Administrative', dot: 'bg-white/50' },
+    district: { name: 'District boundary', source: 'Ghana Administrative', dot: 'bg-cyan-400' },
 };
 
 function computeTakeaway(metrics, selectedYear, selectedRegion, selectedDistrict) {
-    const { ndvi, rehabilitationRate, prevRehabilitationRate } = metrics;
+    const { ndvi, prevNdvi, vegetationHealth } = metrics;
     const referenceYear = (selectedYear || 2024) - 1;
 
-    if (prevRehabilitationRate > 0 && rehabilitationRate > 0) {
-        const change = ((rehabilitationRate - prevRehabilitationRate) / prevRehabilitationRate) * 100;
+    if (prevNdvi > 0 && ndvi > 0) {
+        const change = ((ndvi - prevNdvi) / prevNdvi) * 100;
         if (Math.abs(change) > 3) {
             return change > 0
-                ? `Vegetation recovery improved by ${change.toFixed(0)}% relative to ${referenceYear}.`
-                : `Vegetation recovery declined by ${Math.abs(change).toFixed(0)}% relative to ${referenceYear}.`;
+                ? `NDVI improved by ${change.toFixed(0)}% relative to ${referenceYear}.`
+                : `NDVI declined by ${Math.abs(change).toFixed(0)}% relative to ${referenceYear}.`;
         }
-        return `Vegetation recovery remained broadly stable relative to ${referenceYear}.`;
+        return `NDVI remained broadly stable relative to ${referenceYear}.`;
     }
 
-    if (ndvi > 0 && rehabilitationRate > 0) {
-        return `Average NDVI on mining sites is ${ndvi.toFixed(2)}, indicating ${rehabilitationRate > 50 ? 'moderate' : 'low'} vegetation recovery.`;
+    if (ndvi > 0) {
+        return `Average NDVI is ${ndvi.toFixed(2)}, indicating ${vegetationHealth || 'moderate'} vegetation health.`;
     }
 
-    if (!selectedRegion) return 'Select an area and year to begin analysis.';
-    if (!selectedDistrict) return `Regional estimates for ${selectedRegion}, ${selectedYear}.`;
-    return `District estimates for ${selectedDistrict}, ${selectedYear}.`;
+    if (!selectedRegion) return 'Select a region and year to begin analysis.';
+    if (!selectedDistrict) return `Regional NDVI estimates for ${selectedRegion}, ${selectedYear}.`;
+    return `District NDVI estimates for ${selectedDistrict}, ${selectedYear}.`;
 }
 
-const MapComponent = dynamic(() => import('./Map.jsx'), {
-    ssr: false,
-    loading: () => (
-        <div className="flex h-full w-full items-center justify-center bg-brand-deep text-brand-gold">
-            <div className="flex items-center gap-3">
-                <Loader2 size={18} className="animate-spin" />
-                <span className="text-[11px] font-medium tracking-[0.04em]">Loading map data</span>
-            </div>
-        </div>
-    ),
-});
+const MapComponent = dynamic(() => import('./Map.jsx'), { ssr: false });
 
 function compactValue(val) {
     const num = parseFloat(val) || 0;
@@ -199,7 +179,6 @@ export default function Dashboard() {
     const [mapCommand, setMapCommand] = useState(null);
     const [basemap, setBasemap] = useState('dark');
     const [ndviOpacity, setNdviOpacity] = useState(1);
-    const [rehabilitationOpacity, setRehabilitationOpacity] = useState(1);
     const [showBasemaps, setShowBasemaps] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [shareCopied, setShareCopied] = useState(false);
@@ -215,15 +194,15 @@ export default function Dashboard() {
     const [activeRegion, setActiveRegion] = useState('');
     const [activeDistrict, setActiveDistrict] = useState('');
 
-    const [metrics, setMetrics] = useState({ ndvi: 0, rehabilitationRate: 0, hectaresRestored: 0, prevNdvi: 0, prevRehabilitationRate: 0, trend: [] });
-    const [loading, setLoading] = useState(true);
+    const [metrics, setMetrics] = useState({ ndvi: 0, prevNdvi: 0, ndviChange: 0, vegetationHealth: 'Unknown', trend: [] });
+    const [loading, setLoading] = useState(false);
     const [loadingDistricts, setLoadingDistricts] = useState(false);
     const [loadingMetrics, setLoadingMetrics] = useState(false);
     const [metadataError, setMetadataError] = useState(null);
     const [metricsError, setMetricsError] = useState(null);
     const [districtsError, setDistrictsError] = useState(null);
 
-    const [selectedLayers, setSelectedLayers] = useState(['ndvi', 'rehabilitation']);
+    const [selectedLayers, setSelectedLayers] = useState(['ndvi']);
 
     const toggleLayer = (id) => {
         setSelectedLayers(prev => prev.includes(id) ? prev.filter(layer => layer !== id) : [...prev, id]);
@@ -237,8 +216,8 @@ export default function Dashboard() {
         setActiveDistrict('');
         setDistricts([]);
         setAnalysisScope('region');
-        setSelectedLayers(['ndvi', 'rehabilitation']);
-        setMetrics({ carbonStock: 0, carbonLoss: 0, prevCarbonStock: 0, prevCarbonLoss: 0, trend: [] });
+        setSelectedLayers(['ndvi']);
+        setMetrics({ ndvi: 0, prevNdvi: 0, ndviChange: 0, vegetationHealth: 'Unknown', trend: [] });
         setMetadataError(null);
         setMetricsError(null);
         setDistrictsError(null);
@@ -427,7 +406,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (!activeYear || !activeRegion) {
-        setMetrics({ ndvi: 0, rehabilitationRate: 0, hectaresRestored: 0, prevNdvi: 0, prevRehabilitationRate: 0, trend: [] });
+        setMetrics({ ndvi: 0, prevNdvi: 0, ndviChange: 0, vegetationHealth: 'Unknown', trend: [] });
             setLoadingMetrics(false);
             return;
         }
@@ -470,27 +449,9 @@ export default function Dashboard() {
         });
     }, [activeDistrict]);
 
-    if (loading) {
-        return (
-            <div className="flex h-screen w-screen items-center justify-center bg-brand-deep">
-                <div className="flex flex-col items-center gap-8">
-                    <div className="relative flex h-16 w-16 items-center justify-center">
-                        <div className="canopy-ring" />
-                        <div className="canopy-ring" />
-                        <div className="canopy-ring" />
-                        <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-brand-gold/30 bg-brand-gold/10">
-                            <TreePine size={18} className="text-brand-gold" />
-                        </div>
-                    </div>
-                    <p className="text-sm font-medium tracking-[0.02em] text-white/78">Loading portal data</p>
-                </div>
-            </div>
-        );
-    }
+
 
     const ndviFmt = compactValue(metrics.ndvi);
-    const rehabilitationFmt = compactValue(metrics.rehabilitationRate);
-    const hectaresFmt = compactValue(metrics.hectaresRestored);
 
     return (
         <div className="relative h-screen w-screen overflow-hidden bg-brand-deep text-white selection:bg-brand-gold/30">
@@ -504,7 +465,6 @@ export default function Dashboard() {
                     mapCommand={mapCommand}
                     basemap={basemap}
                     ndviOpacity={ndviOpacity}
-                    rehabilitationOpacity={rehabilitationOpacity}
                 />
             </div>
 
@@ -559,7 +519,7 @@ export default function Dashboard() {
 
             {mobilePanel !== null ? <div className="fixed inset-0 z-30 bg-black/55 md:hidden" onClick={() => setMobilePanel(null)} /> : null}
 
-            <div id="tour-setup-panel" className={`absolute left-4 top-24 z-40 w-[20rem] max-w-[calc(100vw-2rem)] transition-transform duration-300 ${isMobile ? (mobilePanel === 'setup' ? 'translate-y-0' : '-translate-y-[120%]') : ''}`}>
+            <div id="tour-setup-panel" className={`absolute right-4 top-24 z-40 w-[20rem] max-w-[calc(100vw-2rem)] transition-transform duration-300 ${isMobile ? (mobilePanel === 'setup' ? 'translate-y-0' : '-translate-y-[120%]') : ''}`}>
                 <GlassPanel className="pointer-events-auto rounded-2xl border-white/10">
                     <div className="border-b border-white/8 px-4 py-3">
                         <div className="flex items-start justify-between gap-3">
@@ -623,7 +583,6 @@ export default function Dashboard() {
                                 <div>
                                     <div className="mb-1.5 flex items-center justify-between">
                                         <label className="block text-[9px] tracking-[0.12em] text-white/30 uppercase">District</label>
-                                        {loadingDistricts ? <Loader2 size={10} className="animate-spin text-brand-gold/50" /> : null}
                                     </div>
                                     <select value={draftDistrict} onChange={(e) => setDraftDistrict(e.target.value)} disabled={loadingDistricts || !draftRegion} className="h-11 w-full appearance-none border border-white/10 bg-[#0f1114] px-3 text-[11px] font-medium text-white outline-none transition-colors focus:border-brand-gold/60 disabled:cursor-not-allowed disabled:opacity-40">
                                         <option value="" className="bg-brand-deep">{!draftRegion ? 'Select a region first' : 'Select district'}</option>
@@ -694,33 +653,6 @@ export default function Dashboard() {
                                     ) : null}
                                 </div>
 
-                                <div>
-                                    <FloatingToggle label="Rehabilitation status" active={selectedLayers.includes('rehabilitation')} onToggle={() => toggleLayer('rehabilitation')} icon={Pickaxe} iconColor="#f59e0b" />
-                                    {selectedLayers.includes('rehabilitation') ? (
-                                        <div className="mt-1.5 pl-[26px]">
-                                            <div className="mb-2 flex items-center gap-2">
-                                                <input
-                                                    type="range"
-                                                    min={10}
-                                                    max={100}
-                                                    value={Math.round(rehabilitationOpacity * 100)}
-                                                    onChange={(e) => setRehabilitationOpacity(parseInt(e.target.value) / 100)}
-                                                    className="opacity-slider flex-1"
-                                                />
-                                                <span className="w-7 shrink-0 text-right font-mono text-[8px] text-white/34">{Math.round(rehabilitationOpacity * 100)}%</span>
-                                            </div>
-                                            <div
-                                                className="h-2.5 w-full rounded-full border border-white/10"
-                                                style={{ background: LAYER_INFO.rehabilitation.gradient }}
-                                            />
-                                            <div className="mt-1 flex items-center justify-between text-[8px] uppercase tracking-[0.08em] text-white/34">
-                                                <span>{LAYER_INFO.rehabilitation.lowLabel}</span>
-                                                <span>{LAYER_INFO.rehabilitation.highLabel}</span>
-                                            </div>
-                                        </div>
-                                    ) : null}
-                                </div>
-
                                 {hasActiveAnalysis ? <FloatingToggle label="Region boundary" active={selectedLayers.includes('region')} onToggle={() => toggleLayer('region')} icon={Pentagon} iconColor="#c8c8c8" /> : null}
                                 {activeDistrict ? <FloatingToggle label="District boundary" active={selectedLayers.includes('district')} onToggle={() => toggleLayer('district')} icon={Pentagon} iconColor="#d4b27a" /> : null}
                             </div>
@@ -730,7 +662,7 @@ export default function Dashboard() {
                 </GlassPanel>
             </div>
 
-            <div id="tour-findings-panel" className={`absolute right-4 top-24 z-40 flex max-h-[calc(100vh-7rem)] w-[24rem] max-w-[calc(100vw-2rem)] flex-col ${isMobile ? (mobilePanel === 'findings' ? 'translate-y-0' : '-translate-y-[120%] transition-transform duration-300') : ''}`}>
+            <div id="tour-findings-panel" className={`absolute left-4 top-24 z-40 flex max-h-[calc(100vh-7rem)] w-[24rem] max-w-[calc(100vw-2rem)] flex-col ${isMobile ? (mobilePanel === 'findings' ? 'translate-y-0' : '-translate-y-[120%] transition-transform duration-300') : ''}`}>
                 <GlassPanel className="pointer-events-auto flex flex-col border-white/10">
                     <div className="shrink-0 border-b border-white/8 px-5 py-3.5">
                         <div className="flex items-start justify-between gap-3">
@@ -739,7 +671,6 @@ export default function Dashboard() {
                                 <p className="mt-1 text-[11px] leading-snug text-white/50">{activeDistrict || activeRegion || 'Select an area and year'}</p>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                                {loadingMetrics ? <Loader2 size={12} className="animate-spin text-brand-gold/50" /> : null}
                                 <button
                                     onClick={() => setIsFindingsOpen(prev => !prev)}
                                     className="rounded-lg p-1.5 text-white/34 transition-colors hover:bg-white/6 hover:text-white"
@@ -777,31 +708,32 @@ export default function Dashboard() {
                                         suffix={ndviFmt.suffix}
                                         icon={TreePine}
                                         accentClass="text-[#7ecb92]"
+                                        caption={metrics.vegetationHealth}
                                     />
                                     <div className="grid grid-cols-2 gap-3">
                                         <SecondaryMetric
-                                            label="Recovery rate"
-                                            value={`${rehabilitationFmt.value}${rehabilitationFmt.suffix}`}
-                                            helper="% of sites recovering"
-                                            icon={Pickaxe}
-                                            accentClass="text-[#f59e0b]"
+                                            label="NDVI Change"
+                                            value={`${metrics.ndviChange > 0 ? '+' : ''}${(metrics.ndviChange * 100).toFixed(1)}%`}
+                                            helper="vs previous year"
+                                            icon={BarChart3}
+                                            accentClass="text-[#7ecb92]"
                                         />
                                         <SecondaryMetric
-                                            label="Hectares restored"
-                                            value={hectaresFmt.value}
-                                            helper={hectaresFmt.suffix ? `${hectaresFmt.suffix} hectares` : 'hectares'}
-                                            icon={BarChart3}
+                                            label="Health Status"
+                                            value={metrics.vegetationHealth || 'N/A'}
+                                            helper="vegetation condition"
+                                            icon={TreePine}
                                             accentClass="text-[#7ecb92]"
                                         />
                                     </div>
                                     <p className="text-[10px] leading-relaxed text-white/34">
-                                        Vegetation recovery is measured using NDVI from Sentinel-2 satellite imagery.
+                                        NDVI values range from 0 (bare soil) to 1 (dense vegetation).
                                     </p>
                                 </div>
 
                                 <div className="mt-5">
                                     <div className="mb-3 flex items-center justify-between">
-                                        <span className="text-[10px] tracking-[0.12em] text-white/30 uppercase">Recovery timeline</span>
+                                        <span className="text-[10px] tracking-[0.12em] text-white/30 uppercase">NDVI timeline</span>
                                         <span className="font-mono text-[10px] text-white/28">{activeYear}</span>
                                     </div>
                                     <LossChart data={metrics.trend} loading={loadingMetrics} />
@@ -975,3 +907,4 @@ export default function Dashboard() {
         </div>
     );
 }
+

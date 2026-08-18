@@ -1,4 +1,4 @@
-// RehabPulse Ghana - NDVI Calculation Script
+// RehabView Ghana - NDVI Calculation Script
 // This script calculates NDVI from Sentinel-2 imagery for mine rehabilitation monitoring
 
 // Define study area (Ghana's high forest zone)
@@ -79,15 +79,15 @@ var allStats = annualStats.flatten();
 // Export to Google Drive
 Export.table.toDrive({
   collection: allStats,
-  description: 'rehabpulse_ndvi_statistics',
-  folder: 'RehabPulse_Ghana',
+  description: 'RehabView_ndvi_statistics',
+  folder: 'RehabView_Ghana',
   fileFormat: 'CSV'
 });
 
 // Export as GEE FeatureCollection
 Export.table.toAsset({
   collection: allStats,
-  description: 'rehabpulse_ndvi_feature_collection',
+  description: 'RehabView_ndvi_feature_collection',
   assetId: 'projects/your-project/assets/ndvi-feature-collection'
 });
 
@@ -103,3 +103,4 @@ Map.centerObject(studyArea, 9);
 Map.addLayer(annualNDVI.filter(ee.Filter.eq('YEAR', 2024)).first(), ndviVis, 'NDVI 2024');
 
 print('NDVI calculation complete. Check Tasks tab to run export.');
+

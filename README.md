@@ -1,4 +1,4 @@
-# RehabPulse Ghana
+# RehabView Ghana
 
 A web platform for monitoring vegetation recovery on artisanal mining sites in Ghana's high forest zone, 2020–2025.
 
@@ -6,7 +6,7 @@ A web platform for monitoring vegetation recovery on artisanal mining sites in G
 
 Ghana's high forest zone is one of the most productive tropical forest landscapes in the world. It is also the centre of artisanal and small-scale gold mining, locally known as galamsey. Mining clears vegetation and topsoil to reach alluvial deposits, leaving abandoned pits that do not regenerate naturally.
 
-Monitoring rehabilitation progress on these abandoned mining sites has been challenging. What has been missing is a clear picture of vegetation recovery at a resolution useful to the agencies responsible for forest protection and mining regulation. RehabPulse Ghana addresses that gap.
+Monitoring rehabilitation progress on these abandoned mining sites has been challenging. What has been missing is a clear picture of vegetation recovery at a resolution useful to the agencies responsible for forest protection and mining regulation. RehabView Ghana addresses that gap.
 
 ## What the platform shows
 
@@ -56,8 +56,8 @@ The platform is built for the Forestry Commission, the Minerals Commission, the 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/rehabpulse-ghana.git
-   cd rehabpulse-ghana
+   git clone https://github.com/your-username/RehabView-ghana.git
+   cd RehabView-ghana
    ```
 
 2. Install dependencies:
@@ -118,4 +118,5 @@ For questions or data access requests, please open an issue on GitHub.
 ---
 
 Last updated: April 2026
+
 

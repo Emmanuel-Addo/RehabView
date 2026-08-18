@@ -39,7 +39,7 @@ export function AboutModal({ isOpen = false, onClose, onOpenTour, canOpenTour = 
                 {/* Body */}
                 <div className="px-5 py-5 space-y-4">
                     <p className="text-[12px] leading-relaxed text-white/72">
-                        RehabPulse Ghana monitors vegetation recovery on artisanal mining sites across Ghana's high forest zone.
+                        RehabView Ghana monitors vegetation recovery on artisanal mining sites across Ghana's high forest zone.
                     </p>
 
                     <div className="space-y-2.5 border-t border-white/6 pt-4">
@@ -96,3 +96,4 @@ export function AboutModal({ isOpen = false, onClose, onOpenTour, canOpenTour = 
         </div>
     );
 }
+

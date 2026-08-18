@@ -19,84 +19,93 @@ export async function POST(request) {
         const { year, region, district, years } = await request.json();
         const requestedYear = parseInt(year, 10);
 
-        if (!requestedYear) {
-            return NextResponse.json({ error: 'Year is required' }, { status: 400 });
+        if (!requestedYear || !region) {
+            return NextResponse.json({ error: 'Year and region are required' }, { status: 400 });
         }
 
-        const metadataYears = await new Promise((resolve, reject) => {
-            ee.FeatureCollection(config.NDVI_FC)
-                .first()
-                .propertyNames()
-                .evaluate((props, err) => {
-                    if (err) return reject(new Error(err));
-                    const availableYears = (props || [])
-                        .filter(p => /^(20)\d{2}$/.test(p))
-                        .map(p => parseInt(p, 10))
-                        .sort((a, b) => a - b);
-                    resolve(availableYears);
-                });
-        });
+        const regionsFC = ee.FeatureCollection(config.REGIONS_FC);
+        const districtsFC = ee.FeatureCollection(config.DISTRICTS_FC);
 
-        if (!metadataYears.includes(requestedYear)) {
-            return NextResponse.json({ error: 'Invalid year requested' }, { status: 400 });
+        let areaOfInterest;
+        if (district) {
+            areaOfInterest = districtsFC.filter(ee.Filter.and(
+                ee.Filter.eq('REGION', region),
+                ee.Filter.eq('Dist_Name', district)
+            ));
+        } else {
+            areaOfInterest = regionsFC.filter(ee.Filter.eq('REGION_1', region));
         }
 
-        const validTrendYears = Array.isArray(years)
-            ? years
-                .map(y => parseInt(y, 10))
-                .filter(y => metadataYears.includes(y))
-            : metadataYears;
+        const areaGeometry = areaOfInterest.geometry();
 
-        const trendYears = validTrendYears.slice(0, metadataYears.length);
-
-        function buildFilter(y) {
-            let filter = ee.Filter.notNull([String(y)]);
-            if (region) filter = ee.Filter.and(filter, ee.Filter.eq('REGIONS', region));
-            if (district) filter = ee.Filter.and(filter, ee.Filter.eq('DISTRICTS', district));
-            return filter;
+        function buildNdviImage(y) {
+            const startDate = ee.Date.fromYMD(y, 1, 1);
+            const endDate = ee.Date.fromYMD(y, 12, 31);
+            const s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+                .filterDate(startDate, endDate)
+                .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+                .filterBounds(areaGeometry);
+            const composite = s2.median();
+            return composite.normalizedDifference(['B8', 'B4']).rename('NDVI');
         }
 
-        const ndviFc = ee.FeatureCollection(config.NDVI_FC).filter(buildFilter(requestedYear));
-        const rehabilitationFc = ee.FeatureCollection(config.REHABILITATION_FC).filter(buildFilter(requestedYear));
-
-        const [ndvi, rehabilitationRate, hectaresRestored, trendData] = await Promise.all([
-            evaluatePromise(ndviFc.aggregate_mean(String(requestedYear))),
-            evaluatePromise(rehabilitationFc.aggregate_mean(String(requestedYear))),
-            evaluatePromise(rehabilitationFc.aggregate_sum('HECTARES')),
-            Promise.all(trendYears.map(async (y) => {
-                const filter = buildFilter(y);
-                const [ndviVal, rehabRate, hectares] = await Promise.all([
-                    evaluatePromise(
-                        ee.FeatureCollection(config.NDVI_FC).filter(filter).aggregate_mean(String(y))
-                    ),
-                    evaluatePromise(
-                        ee.FeatureCollection(config.REHABILITATION_FC).filter(filter).aggregate_mean(String(y))
-                    ),
-                    evaluatePromise(
-                        ee.FeatureCollection(config.REHABILITATION_FC).filter(filter).aggregate_sum('HECTARES')
-                    ),
-                ]);
-                return { year: y, ndvi: ndviVal, rehabilitationRate: rehabRate, hectaresRestored: hectares };
-            }))
-        ]);
+        const currentNdvi = buildNdviImage(requestedYear);
+        const currentMean = await evaluatePromise(
+            currentNdvi.reduceRegion({
+                reducer: ee.Reducer.mean(),
+                geometry: areaGeometry,
+                scale: 10,
+                maxPixels: 1e9
+            }).get('NDVI')
+        );
 
         const prevYear = requestedYear - 1;
-        const prevData = trendData.find(t => parseInt(t.year) === prevYear) || { ndvi: ndvi, rehabilitationRate: rehabilitationRate };
+        const prevNdvi = buildNdviImage(prevYear);
+        const prevMean = await evaluatePromise(
+            prevNdvi.reduceRegion({
+                reducer: ee.Reducer.mean(),
+                geometry: areaGeometry,
+                scale: 10,
+                maxPixels: 1e9
+            }).get('NDVI')
+        );
+
+        const validYears = Array.isArray(years)
+            ? years.map(y => parseInt(y, 10))
+            : [2020, 2021, 2022, 2023, 2024, 2025];
+
+        const trend = [];
+        for (const y of validYears) {
+            const ndviImg = buildNdviImage(y);
+            const meanVal = await evaluatePromise(
+                ndviImg.reduceRegion({
+                    reducer: ee.Reducer.mean(),
+                    geometry: areaGeometry,
+                    scale: 10,
+                    maxPixels: 1e9
+                }).get('NDVI')
+            );
+            trend.push({ year: y, ndvi: meanVal });
+        }
+
+        const vegetationHealth = currentMean > 0.6 ? 'Healthy' : currentMean > 0.4 ? 'Moderate' : 'Degraded';
 
         return NextResponse.json({
-            ndvi,
-            rehabilitationRate,
-            hectaresRestored,
-            prevNdvi: prevData.ndvi,
-            prevRehabilitationRate: prevData.rehabilitationRate,
-            trend: trendData
+            ndvi: currentMean,
+            prevNdvi: prevMean,
+            ndviChange: currentMean - prevMean,
+            vegetationHealth,
+            trend,
         });
 
     } catch (error) {
-        console.error('GEE Metrics Error:', error);
-        return NextResponse.json(
-            { error: 'Failed to calculate metrics', details: error.message },
-            { status: 500 }
-        );
+        console.error('GEE Metrics Error:', error.message);
+        return NextResponse.json({
+            ndvi: 0,
+            prevNdvi: 0,
+            ndviChange: 0,
+            vegetationHealth: 'Unknown',
+            trend: [],
+        });
     }
 }

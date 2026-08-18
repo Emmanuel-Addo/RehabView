@@ -1,4 +1,4 @@
-# RehabPulse Ghana - Setup Summary
+# RehabView Ghana - Setup Summary
 
 ## What Has Been Done
 
@@ -8,7 +8,7 @@ I've successfully adapted the EcoPulse codebase for mine rehabilitation monitori
 - ✅ README.md updated with new project name and description
 - ✅ Page metadata updated (title, description)
 - ✅ Layout metadata updated
-- ✅ All components renamed from "EcoPulse" to "RehabPulse"
+- ✅ All components renamed from "EcoPulse" to "RehabView"
 
 ### 2. UI/UX Updates
 - ✅ Dashboard branding updated
@@ -118,7 +118,7 @@ REHABILITATION_VIS="projects/your-project/assets/rehabilitation-image-collection
 ## File Structure
 
 ```
-rehabpulse-ghana/
+RehabView-ghana/
 ├── app/
 │   ├── api/
 │   │   └── gee/
@@ -167,3 +167,4 @@ For questions about:
 ---
 
 **Status:** ✅ Code ready, awaiting GEE credentials and CERSGIS data access
+

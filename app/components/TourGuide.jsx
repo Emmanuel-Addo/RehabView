@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { X, ChevronRight, ChevronLeft } from 'lucide-react';
 
-const TOUR_KEY = 'rehabpulse_tour_seen';
+const TOUR_KEY = 'rehabview_tour_seen';
 
 const STEPS = [
     {
@@ -164,3 +164,4 @@ export function TourGuide({ autoStart = false }) {
         </>
     );
 }
+

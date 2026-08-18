@@ -1,5 +1,5 @@
 {
-  "name": "rehabpulse-ghana",
+  "name": "rehabview-ghana",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -29,3 +29,4 @@
     "tailwindcss": "^4"
   }
 }
+
