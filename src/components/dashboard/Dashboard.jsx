@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import {
     AlertTriangle,
     BarChart3,
@@ -25,6 +27,7 @@ import {
     Share2,
     TreePine,
     Download,
+    LogOut,
 } from 'lucide-react';
 
 import { GlassPanel } from '@/components/ui/GlassPanel.jsx';
@@ -144,6 +147,7 @@ function SecondaryMetric({ label, value, helper, icon: Icon, accentClass, valueC
 }
 
 export default function Dashboard() {
+    const router = useRouter();
     const pendingUrlDistrictRef = useRef('');
     const [isMobile, setIsMobile] = useState(false);
     const [mobilePanel, setMobilePanel] = useState(null);
@@ -153,6 +157,16 @@ export default function Dashboard() {
     const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
     const [isAboutOpen, setIsAboutOpen] = useState(false);
     const [isRequestOpen, setIsRequestOpen] = useState(false);
+
+    const handleLogout = async () => {
+        try {
+            await supabase.auth.signOut();
+        } catch (err) {
+            console.error("Error signing out: ", err);
+        } finally {
+            router.push('/');
+        }
+    };
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
@@ -738,14 +752,14 @@ export default function Dashboard() {
                     ) : null}
 
                     <div className="grid grid-cols-3 gap-2">
-                        <button onClick={() => setTourTrigger(prev => prev + 1)} className="flex items-center justify-center gap-1 border border-white/10 rounded-lg py-2 text-[9px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
-                            <HelpCircle size={10} /> Help
+                        <button onClick={handleLogout} className="flex items-center justify-center gap-1.5 border border-red-500/20 rounded-lg py-2.5 text-xs text-red-400 bg-red-950/10 hover:bg-red-500/10 hover:text-red-300 transition-colors cursor-pointer font-medium">
+                            <LogOut size={12} /> Logout
                         </button>
-                        <button onClick={() => setIsAboutOpen(true)} className="flex items-center justify-center gap-1 border border-white/10 rounded-lg py-2 text-[9px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
-                            <Info size={10} /> About
+                        <button onClick={() => setIsAboutOpen(true)} className="flex items-center justify-center gap-1.5 border border-white/10 rounded-lg py-2.5 text-xs text-white/60 transition-colors hover:bg-white/6 hover:text-white cursor-pointer">
+                            <Info size={12} /> About
                         </button>
-                        <button onClick={() => setIsRequestOpen(true)} className="flex items-center justify-center gap-1 border border-white/10 rounded-lg py-2 text-[9px] text-white/58 transition-colors hover:bg-white/6 hover:text-white">
-                            <Send size={10} /> Request
+                        <button onClick={() => setIsRequestOpen(true)} className="flex items-center justify-center gap-1.5 border border-white/10 rounded-lg py-2.5 text-xs text-white/60 transition-colors hover:bg-white/6 hover:text-white cursor-pointer">
+                            <Send size={12} /> Request
                         </button>
                     </div>
                 </div>
@@ -972,7 +986,7 @@ export default function Dashboard() {
                 <div className="fixed bottom-14 left-0 right-0 z-40 md:hidden" style={{ background: 'linear-gradient(180deg,rgba(4,5,7,0.97)0%,rgba(2,3,5,0.99)100%)', backdropFilter: 'blur(16px) saturate(120%)', WebkitBackdropFilter: 'blur(16px) saturate(120%)', borderTop: '1px solid rgba(243,239,228,0.08)' }}>
                     <div className="px-4 py-3">
                         <p className="mb-3 text-[9px] font-bold tracking-[0.14em] text-white/40 uppercase">Actions</p>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-5 gap-2">
                             <button onClick={() => { setIsAboutOpen(true); setMobilePanel(null); }} className="flex flex-col items-center gap-1.5 rounded-xl py-3 text-white/55 transition-colors hover:bg-white/6 hover:text-white">
                                 <Info size={18} strokeWidth={1.6} />
                                 <span className="text-[9px] font-medium">About</span>
@@ -987,11 +1001,15 @@ export default function Dashboard() {
                             </button>
                             <button onClick={() => setMapCommand({ type: 'reset', t: Date.now() })} className="flex flex-col items-center gap-1.5 rounded-xl py-3 text-white/55 transition-colors hover:bg-white/6 hover:text-white">
                                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-                        <polygon points="10,2 12.5,10 10,8.5 7.5,10" fill="#10b981" />
+                                    <polygon points="10,2 12.5,10 10,8.5 7.5,10" fill="#10b981" />
                                     <polygon points="10,18 12.5,10 10,11.5 7.5,10" fill="rgba(255,255,255,0.35)" />
                                     <circle cx="10" cy="10" r="1.5" fill="rgba(255,255,255,0.6)" />
                                 </svg>
                                 <span className="text-[9px] font-medium">Reset</span>
+                            </button>
+                            <button onClick={() => { handleLogout(); setMobilePanel(null); }} className="flex flex-col items-center gap-1.5 rounded-xl py-3 text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300">
+                                <LogOut size={18} strokeWidth={1.6} />
+                                <span className="text-[9px] font-medium">Logout</span>
                             </button>
                         </div>
 

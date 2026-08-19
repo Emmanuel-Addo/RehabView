@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/earthengine": "^1.7.9",
+    "@supabase/supabase-js": "^2.112.3",
     "clsx": "^2.1.1",
     "google-auth-library": "^10.5.0",
     "leaflet": "^1.9.4",
@@ -29,4 +30,3 @@
     "tailwindcss": "^4"
   }
 }
-

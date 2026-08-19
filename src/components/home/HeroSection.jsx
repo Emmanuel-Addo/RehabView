@@ -50,10 +50,10 @@ const Hero = () => {
                             </span>
                         </Link>
                         <div id="menu" className={`${mobileOpen ? 'max-md:w-full' : 'max-md:w-0'} max-md:fixed max-md:top-0 max-md:z-50 max-md:left-0 max-md:transition-all max-md:duration-300 max-md:overflow-hidden max-md:h-screen max-md:bg-white/25 max-md:backdrop-blur max-md:flex-col max-md:justify-center flex items-center gap-10 text-sm`}>
-                            <a href="/" onClick={() => setMobileOpen(false)} className="text-gray-800 hover:text-gray-500">Home</a>
-                            <a href="/dashboard" onClick={() => setMobileOpen(false)} className="text-gray-800 hover:text-gray-500">Dashboard</a>
-                            <a href="#about" onClick={() => setMobileOpen(false)} className="text-gray-800 hover:text-gray-500">About</a>
-                            <a href="#data" onClick={() => setMobileOpen(false)} className="text-gray-800 hover:text-gray-500">Data</a>
+                            <a href="/" onClick={() => setMobileOpen(false)} className="text-gray-800 hover:text-gray-500 font-medium">Home</a>
+                            <a href="/dashboard" onClick={() => setMobileOpen(false)} className="text-gray-800 hover:text-gray-500 font-medium">Dashboard</a>
+                            <a href="#about" onClick={() => setMobileOpen(false)} className="text-gray-800 hover:text-gray-500 font-medium">About</a>
+                            <a href="#data" onClick={() => setMobileOpen(false)} className="text-gray-800 hover:text-gray-500 font-medium">Data</a>
 
                             <button id="close-menu" onClick={() => setMobileOpen(false)} className="md:hidden bg-gray-900 hover:bg-gray-800 text-white p-2 rounded-md aspect-square font-medium transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -61,9 +61,14 @@ const Hero = () => {
                                 </svg>
                             </button>
                         </div>
-                        <Link href="/dashboard" className="hidden md:flex bg-gray-900 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg text-sm transition cursor-pointer group">
-                            Open Dashboard
-                        </Link>
+                        <div className="hidden md:flex items-center gap-4">
+                            <Link href="/login" className="text-gray-900 hover:text-gray-700 text-sm font-semibold transition">
+                                Login
+                            </Link>
+                            <Link href="/signup" className="bg-gray-900 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer">
+                                Get started
+                            </Link>
+                        </div>
                         <button id="open-menu" onClick={() => setMobileOpen(true)} className="md:hidden bg-gray-900 hover:bg-gray-800 text-white p-2 rounded-md aspect-square font-medium transition">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M4 12h16" /><path d="M4 18h16" /><path d="M4 6h16" />
@@ -87,11 +92,11 @@ const Hero = () => {
                 <p className="text-sm md:text-base text-center max-w-[500px] mt-2 text-gray-700 px-4">
                     Select any region or district in Ghana and instantly view its NDVI score — a satellite-based measure of vegetation health — tracked annually from 2020 to 2025.
                 </p>
-                <div className="relative">
-                    <Link href="/dashboard" className="inline-block bg-gray-900 text-white font-medium text-sm px-6 py-2.5 rounded-lg hover:bg-gray-700 transition-colors duration-300 cursor-pointer mt-14">
-                        Explore the Dashboard
+                <div className="relative mt-10">
+                    <Link href="/signup" className="inline-block bg-black text-white font-semibold text-sm px-6 py-2.5 rounded-lg hover:bg-neutral-800 transition-all duration-200 cursor-pointer">
+                        Get started
                     </Link>
-                    <svg className="hidden md:block absolute left-full top-2 ml-8 w-[119px] h-[79px]" viewBox="0 0 119 79" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M116 2.5c0 72.367-74.25 73.936-108 63.374" stroke="url(#a)" strokeWidth="5" strokeLinecap="round"/><path d="M12.625 55.25 2.5 65.812l10.125 10.563" stroke="url(#b)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="a" x1="2.5" y1="-.625" x2="62.877" y2="96.308" gradientUnits="userSpaceOnUse"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#93c5fd"/></linearGradient><linearGradient id="b" x1="2.5" y1="55.25" x2="18.967" y2="63.143" gradientUnits="userSpaceOnUse"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#93c5fd"/></linearGradient></defs></svg>
+                    <svg className="hidden md:block absolute left-full -top-14 ml-8 w-[119px] h-[79px]" viewBox="0 0 119 79" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M116 2.5c0 72.367-74.25 73.936-108 63.374" stroke="url(#a)" strokeWidth="5" strokeLinecap="round"/><path d="M12.625 55.25 2.5 65.812l10.125 10.563" stroke="url(#b)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="a" x1="2.5" y1="-.625" x2="62.877" y2="96.308" gradientUnits="userSpaceOnUse"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#93c5fd"/></linearGradient><linearGradient id="b" x1="2.5" y1="55.25" x2="18.967" y2="63.143" gradientUnits="userSpaceOnUse"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#93c5fd"/></linearGradient></defs></svg>
                 </div>
 
                 <p className='mt-17 text-sm text-gray-700'>POWERED BY SCIENTIFIC DATA PARTNERS:</p>
