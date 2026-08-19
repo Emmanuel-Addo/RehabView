@@ -35,7 +35,7 @@ const Hero = () => {
                     }
                 `}
             </style>
-            <header className='flex flex-col items-center justify-center bg-[url("https://assets.prebuiltui.com/components/hero-section/hero-bg-grid.png")] bg-center md:bg-top bg-no-repeat bg-size-[min(972px,100%)_auto] mb-10'>
+            <header className='flex flex-col items-center justify-center bg-white mb-10'>
                 <nav className="flex flex-col items-center w-full" >
                     <div className="flex items-center justify-between p-4 md:px-16 lg:px-24 xl:px-32 md:py-4 w-full relative">
                         <Link href="/" className="flex items-center gap-2">

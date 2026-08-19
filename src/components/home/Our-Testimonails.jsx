@@ -5,7 +5,7 @@ const OurTestimonials = () => {
         { text: "The yearly trend charts and cloud-free satellite data filters make tracking local reforestation and land reclamation progress extremely reliable and fast.", name: "Kwabena Boateng", role: "Environmental Officer", image: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&auto=format&fit=crop&q=60" },
         { text: "An excellent open tool for environmental impact assessment. The ease of access to cleaned, localized vegetation index metrics helps our research advocacy immensely.", name: "Prof. Grace Addo", role: "Climate Scientist", image: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=60" },
         { text: "RehabView simplifies satellite-based crop monitoring. The interface is intuitive, and the yearly district comparisons are perfectly structured for spatial planners.", name: "Kofi Mensah", role: "Spatial Planner", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100&h=100&auto=format&fit=crop" },
-        { text: "Perfect tool for verifying reforestation project success in the Volta region. The annual NDVI trend tracking is highly accurate and easy to present to stakeholders.", name: "Sarah Lawson", role: "NGO Coordinator", image: "https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/userImage/userImage1.png" }
+        { text: "Perfect tool for verifying reforestation project success in the Volta region. The annual NDVI trend tracking is highly accurate and easy to present to stakeholders.", name: "Sarah Lawson", role: "NGO Coordinator", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200" }
     ];
 
     const rows = [

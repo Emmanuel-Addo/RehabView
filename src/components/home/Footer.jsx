@@ -23,21 +23,19 @@ const Footer = () => {
                         <div className="w-[45%] md:w-[45%] lg:w-[15%] flex flex-col items-start text-left">
                             <h3 className='text-sm text-white font-medium'>Important Links</h3>
                             <div className="flex flex-col gap-2 mt-6">
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>Home</a>
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>About</a>
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>Dashboard</a>
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>Contact</a>
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>FAQ</a>
+                                <a href="/" className='text-sm text-white/60 hover:text-white transition-colors'>Home</a>
+                                <a href="/dashboard" className='text-sm text-white/60 hover:text-white transition-colors'>Dashboard</a>
+                                <a href="/signup" className='text-sm text-white/60 hover:text-white transition-colors'>Sign up</a>
+                                <a href="/login" className='text-sm text-white/60 hover:text-white transition-colors'>Login</a>
                             </div>
                         </div>
 
                         <div className="w-[45%] md:w-[45%] lg:w-[15%] flex flex-col items-start text-left">
                             <h3 className='text-sm text-white font-medium'>Social Links</h3>
                             <div className="flex flex-col gap-2 mt-6">
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>Twitter</a>
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>Instagram</a>
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>Youtube</a>
-                                <a href="#" className='text-sm text-white/60 hover:text-white transition-colors'>Linkedin</a>
+                                <a href="https://github.com/Emmanuel-Addo/RehabView" target="_blank" rel="noopener noreferrer" className='text-sm text-white/60 hover:text-white transition-colors'>GitHub</a>
+                                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className='text-sm text-white/60 hover:text-white transition-colors'>Twitter</a>
+                                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className='text-sm text-white/60 hover:text-white transition-colors'>LinkedIn</a>
                             </div>
                         </div>
 
@@ -56,9 +54,7 @@ const Footer = () => {
                     <div className="flex flex-wrap sm:flex-row items-center justify-between gap-y-4 gap-x-2 relative z-10">
                         <p className='text-xs text-white/60'>© 2026 RehabPulse</p>
                         <div className="flex items-center gap-6 text-right">
-                            <a href='#' className='text-xs text-white/60 hover:text-white transition-colors'>Terms & Conditions</a>
-                            <div className='w-px h-4 bg-white/20'></div>
-                            <a href='#' className='text-xs text-white/60 hover:text-white transition-colors'>Privacy Policy</a>
+                            <a href="https://github.com/Emmanuel-Addo/RehabView" target="_blank" rel="noopener noreferrer" className='text-xs text-white/60 hover:text-white transition-colors'>GitHub</a>
                         </div>
                     </div>
 
