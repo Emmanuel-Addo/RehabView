@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Build
+        run: yarn build
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          SERVICE_EMAIL: ${{ secrets.SERVICE_EMAIL }}
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          NDVI_FC: ${{ secrets.NDVI_FC }}
+          REHABILITATION_FC: ${{ secrets.REHABILITATION_FC }}
+          MINING_FOOTPRINTS_FC: ${{ secrets.MINING_FOOTPRINTS_FC }}
+          PILOT_AREA: ${{ secrets.PILOT_AREA }}
+          NDVI_VIS: ${{ secrets.NDVI_VIS }}
+          REHABILITATION_VIS: ${{ secrets.REHABILITATION_VIS }}
+          FULL_DISTRICTS_FC: ${{ secrets.FULL_DISTRICTS_FC }}
+          FULL_REGIONS_FC: ${{ secrets.FULL_REGIONS_FC }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
