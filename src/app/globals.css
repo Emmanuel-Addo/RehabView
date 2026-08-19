@@ -278,3 +278,23 @@ select:focus {
 
 button, select, [role='button'] { cursor: pointer !important; }
 
+/* Hide scrollbars globally while keeping scroll functionality */
+* {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE / Edge */
+}
+
+*::-webkit-scrollbar {
+    display: none;               /* Chrome / Safari / Webkit */
+}
+
+/* Utility class for targeted use */
+.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
